@@ -1,56 +1,24 @@
-﻿/********************************************************************
- * Copyright (C) 2015 Liangliang Nan <liangliang.nan@gmail.com>
- * https://3d.bk.tudelft.nl/liangliang/
- *
- * This file is part of Easy3D. If it is useful in your research/work,
- * I would be grateful if you show your appreciation by citing it:
- * ------------------------------------------------------------------
- *      Liangliang Nan.
- *      Easy3D: a lightweight, easy-to-use, and efficient C++ library
- *      for processing and rendering 3D data.
- *      Journal of Open Source Software, 6(64), 3255, 2021.
- * ------------------------------------------------------------------
- *
- * Easy3D is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License Version 3
- * as published by the Free Software Foundation.
- *
- * Easy3D is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- ********************************************************************/
+﻿#include <spatium/gfx3d.h>
+#include <memory>
 
-#include <easy3d/core/point_cloud.h>
-#include <easy3d/util/initializer.h>
+using namespace spatium;
 
-using namespace easy3d;
+int main(int argc char** argc)
+{
+	// Create a scene
+	gfx3d::Scene scene;
 
+	// Add a cube mesh with size 2 at origin
+	auto cube = std::make_shared<gfx3d::Mesh>(gfx3d::Mesh::cube(2));
+	scene.addRenderObject(cube);
 
-// This example shows how to
-//		- create a point cloud from a set of points
+	// Set othographic camera in the scene
+	auto camera = std::make_shared<gfx3d::OrthographicCamera>(5, 15, 5);
+	camera->lookAt({ 10,5,5 }, { 0,0,0 }, { 0,0,1 });
+	scene.setCamera(camera);
 
-
-
-int main(int argc, char** argv) {
-	// Initialize Easy3D.
-	initialize();
-
-	// Create a point cloud
-	PointCloud* cloud = new PointCloud;
-
-	// Add some points. Here we add 100 points on a 10*10 grid.
-	for (float i = -5; i < 5; ++i) {
-		for (float j = -5; j < 5; ++j)
-			cloud->add_vertex(vec3(i, j, 0));// z = 0: all points are on XY plane
-	}
-	std::cout << "point cloud has " << cloud->n_vertices() << " points" << std::endl;
-
-	// Delete the point cloud (i.e., release memory)
-	delete cloud;
-
-	return EXIT_SUCCESS;
+	// Render a 2D wireframe image
+	Image<unsigned char, 3> image(640, 480);
+	gfx3d::WireframeRenderer renderer;
+	renderer.render(scene, image);
 }
