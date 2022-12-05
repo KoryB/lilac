@@ -1,6 +1,4 @@
-﻿#include <stdio.h>
-
-////////////////////////////////////////////////////////////
+﻿////////////////////////////////////////////////////////////
 // Headers
 ////////////////////////////////////////////////////////////
 #include <SFML3D/Graphics.hpp>
@@ -20,6 +18,8 @@
 ///
 /// \return Application exit code
 ///
+/// Note that the shader code (on line 1000 of RenderTarget.cpp) needs to be modified
+/// To be #version 420 to run this with proper shading (for some reason... it's really not clear to me why this would be needed)
 ////////////////////////////////////////////////////////////
 int main()
 {
@@ -44,29 +44,6 @@ int main()
     // Set the camera as the window's active view
     window.setView(camera);
 
-    // Create a sprite for the background
-    sf3d::Texture backgroundTexture;
-    if (!backgroundTexture.loadFromFile("resources/background.jpg"))
-        return EXIT_FAILURE;
-    sf3d::Sprite background(backgroundTexture);
-    background.setOrigin(backgroundTexture.getSize().x / 2.f, backgroundTexture.getSize().y / 2.f);
-    background.setPosition(0, 0, -100);
-    background.setScale(downscaleFactor * 100.f);
-
-    // Create some text to draw on top of our OpenGL object
-    sf3d::Font font;
-    if (!font.loadFromFile("resources/sansation.ttf"))
-        return EXIT_FAILURE;
-    sf3d::Text text("SFML3D / 3D demo", font);
-    text.setColor(sf3d::Color(255, 255, 255, 170));
-    text.setOrigin(text.getGlobalBounds().width / 2.f, text.getGlobalBounds().height / 2.f);
-    text.setPosition(0, -30, -100);
-    text.setScale(downscaleFactor * 100.f);
-
-    sf3d::Text info("W, A, S, D, Space, Shift, Mouse to move\nEsc to exit", font);
-    info.setColor(sf3d::Color(255, 255, 255, 170));
-    info.setPosition(10, 0, 0);
-
     // Create a cube to demonstrate transform and lighting effects
     sf3d::Cuboid cube(sf3d::Vector3f(5, 5, 5));
     cube.setColor(sf3d::Color::Red);
@@ -80,16 +57,6 @@ int main()
     // Create a sphere to mark our light position
     sf3d::SphericalPolyhedron lightSphere(2, 1);
     lightSphere.setColor(sf3d::Color::Yellow);
-
-    // Create a billboard
-    sf3d::Texture billboardTexture;
-    if (!billboardTexture.loadFromFile("resources/texture.jpg"))
-        return EXIT_FAILURE;
-    sf3d::Billboard billboard(billboardTexture);
-    billboard.setOrigin(billboardTexture.getSize().x / 2.f, billboardTexture.getSize().y / 2.f);
-    billboard.setPosition(0, -10, -50);
-    billboard.setScale(downscaleFactor * 20.f);
-    billboard.setCamera(camera);
 
     // Create a clock for measuring the time elapsed
     sf3d::Clock clock;
@@ -211,16 +178,8 @@ int main()
         // Set the sphere to the same position as the light source
         lightSphere.setPosition(light.getPosition());
 
-        // Draw the background
-        window.draw(background);
-
         // Disable lighting for the text and the light sphere
         sf3d::Light::disableLighting();
-
-        // Disable depth testing for sf3d::Text because it requires blending
-        window.enableDepthTest(false);
-        window.draw(text);
-        window.enableDepthTest(true);
 
         // Draw the sphere representing the light position
         window.draw(lightSphere);
@@ -231,14 +190,10 @@ int main()
         // Draw the cube, sphere and billboard
         window.draw(cube);
         window.draw(sphere);
-        window.draw(billboard);
 
         // Disable lighting and reset to 2D view to draw information
         sf3d::Light::disableLighting();
         window.setView(window.getDefaultView());
-
-        // Draw informational text
-        window.draw(info);
 
         // Reset view to our camera and enable lighting again
         window.setView(camera);
