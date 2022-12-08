@@ -3,11 +3,11 @@
 #
 cmake_minimum_required (VERSION 3.22)
 
-project ("Lilac" VERSION 0.1)
+project ("Lilac" VERSION 0.0.1)
 
 include(FetchContent)
 
-set(BUILD_SHARED_LIBS TRUE)
+set(BUILD_SHARED_LIBS TRUE) 
 
 FetchContent_Declare(
 	SFML3D
