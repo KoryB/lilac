@@ -19,13 +19,21 @@ FetchContent_MakeAvailable(SFML3D)
 
 # Add source to this project's executable.
 include_directories("include")
+include_directories("lib/GLEW/include")
 include_directories("${sfml3d_SOURCE_DIR}/include")
-add_executable (Lilac "src/Lilac.cpp")
+
+# Wouldn't be a bad idea to setup different for Win32 vs x64
+link_directories("lib/GLEW/lib/Release/x64")
+
+add_executable (Lilac "src/Lilac/Lilac.cpp")
+add_executable (LilacRaytracer "src/Lilac/LilacRaytracer.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET Lilac PROPERTY CXX_STANDARD 20)
+  set_property(TARGET LilacRaytracer PROPERTY CXX_STANDARD 20)
 endif()
 
 target_link_libraries(Lilac sfml3d-graphics sfml3d-window sfml3d-system)
+target_link_libraries(LilacRaytracer sfml3d-graphics sfml3d-window sfml3d-system glew32)
 
 # TODO: Add tests and install targets if needed.
