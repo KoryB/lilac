@@ -38,6 +38,8 @@ target_link_libraries(LilacRaytracer sfml3d-graphics sfml3d-window sfml3d-system
 
 # TODO: Add tests and install targets if needed.
 
+
+# File copying, for some reason it really doesn't like to copy multiple times, perhaps because files exist?
 add_custom_command(TARGET Lilac POST_BUILD
 	COMMAND "${CMAKE_COMMAND}" -E copy_directory
 		"${sfml3d_BINARY_DIR}/lib"
@@ -47,6 +49,16 @@ add_custom_command(TARGET LilacRaytracer POST_BUILD
 	COMMAND "${CMAKE_COMMAND}" -E copy_directory
 		"${sfml3d_BINARY_DIR}/lib"
 		$<TARGET_FILE_DIR:LilacRaytracer>)
+
+add_custom_command(TARGET Lilac POST_BUILD
+	COMMAND "${CMAKE_COMMAND}" -E copy_directory
+		"${PROJECT_SOURCE_DIR}/resources"
+		"$<TARGET_FILE_DIR:LilacRaytracer>/resources")
+
+add_custom_command(TARGET LilacRaytracer POST_BUILD
+	COMMAND "${CMAKE_COMMAND}" -E copy_directory
+		"${PROJECT_SOURCE_DIR}/resources"
+		"$<TARGET_FILE_DIR:LilacRaytracer>/resources")
 
 add_custom_command(TARGET LilacRaytracer POST_BUILD
 	COMMAND "${CMAKE_COMMAND}" -E copy_if_different
