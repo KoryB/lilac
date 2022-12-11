@@ -1,41 +1,41 @@
-#include <GL/glew.h>
+
 
 #include <SFML3D/Window.hpp>
 #include <SFML3D/Graphics.hpp>
-#include <SFML3D/OpenGL.hpp>
+
+#include <Lilac/OpenGL.h>
+
+#include <Lilac/Shader.h>
+#include <Lilac/Program.h>
+#include <Lilac/File.h>
 
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <vector>
 
+
+const std::string vertexShaderSource =
+	"#version 400\n"
+	"in vec3 vp;"
+	"out vec2 v_tex_coord;"
+	"void main() {"
+	"  gl_Position = vec4(2.0 * vp - vec3(1.0, 1.0, 0.0), 1.0);"
+	"  v_tex_coord = vp.xy;"
+	"}";
+
+const std::string fragmentShaderSource =
+	"#version 400\n"
+	"in vec2 v_tex_coord;"
+	"out vec4 frag_colour;"
+	"uniform sampler2D u_texture;"
+	"void main() {"
+	"  frag_colour = texture(u_texture, v_tex_coord);"
+	"}";
+
 void init_opengl()
 {
 
-}
-
-int log_shader_compile_error(GLuint shader)
-{
-	GLint isCompiled = 0;
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
-	if (isCompiled == GL_FALSE)
-	{
-		GLint maxLength = 0;
-		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
-
-		// The maxLength includes the NULL character
-		std::vector<GLchar> errorLog(maxLength);
-		glGetShaderInfoLog(shader, maxLength, &maxLength, &errorLog[0]);
-		std::string errorString(errorLog.begin(), errorLog.end());
-
-		std::cerr << "Shader compilation error: " << std::endl << errorString << std::endl;
-
-		// Exit with failure.
-		glDeleteShader(shader); // Don't leak the shader.
-		return 1;
-	}
-
-	return 0;
 }
 
 // for some reason we're getting just a speck in the output
@@ -46,10 +46,6 @@ int main()
 	sf3d::Window window(sf3d::VideoMode(512, 512), "OpenGL");
 	window.setActive(true);
 
-	// This assumes compute shaders are available (gl 4.3+)
-	int tex_w = 512, tex_h = 512;
-	GLuint tex_output;
-
 	GLenum err = glewInit(); // REQUIRED to use GLEW functions!
 
 	if (err != GLEW_OK)
@@ -58,14 +54,6 @@ int main()
 		return EXIT_FAILURE;
 	}
 
-	std::ifstream fp{ "resources/shaders/raytrace.cs.glsl" };
-	std::stringstream buffer;
-	buffer << fp.rdbuf();
-
-	fp.close();
-
-	auto raytracer_shader_source = buffer.str();
-
 	std::cout << "" << std::endl;
 	std::cout << "" << "OpenGL Vendor: " << glGetString(GL_VENDOR) << std::endl;
 	std::cout << "" << "OpenGL Renderer: " << glGetString(GL_RENDERER) << std::endl;
@@ -73,6 +61,11 @@ int main()
 	std::cout << "" << "OpenGL Shading Language Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
 	std::cout << "" << std::endl;
 	std::cout << "Status: Using GLEW " << glewGetString(GLEW_VERSION) << std::endl << std::endl;
+
+
+	// This assumes compute shaders are available (gl 4.3+)
+	int tex_w = 512, tex_h = 512;
+	GLuint tex_output;
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, tex_output);
@@ -114,42 +107,9 @@ int main()
 
 	std::cout << "Max work group invocations: " << work_group_invocations << std::endl;
 
-	GLuint raytracer_shader = glCreateShader(GL_COMPUTE_SHADER);
-	auto raytracer_shader_cstr = raytracer_shader_source.c_str();
-
-	std::cout << "Compiling shader: " << raytracer_shader_source << std::endl;
-	glShaderSource(raytracer_shader, 1, &raytracer_shader_cstr, NULL);
-	glCompileShader(raytracer_shader);
-	if (log_shader_compile_error(raytracer_shader))
-	{
-		return EXIT_FAILURE;
-	}
-
-	GLuint raytracer_program = glCreateProgram();
-	glAttachShader(raytracer_program, raytracer_shader);
-	glLinkProgram(raytracer_program);
-	// check for linking errors and validate program as per normal here
-	GLint isLinked = 0;
-	glGetProgramiv(raytracer_program, GL_LINK_STATUS, &isLinked);
-	if (isLinked == GL_FALSE)
-	{
-		GLint maxLength = 0;
-		glGetProgramiv(raytracer_program, GL_INFO_LOG_LENGTH, &maxLength);
-
-		// The maxLength includes the NULL character
-		std::vector<GLchar> infoLog(maxLength);
-		glGetProgramInfoLog(raytracer_program, maxLength, &maxLength, &infoLog[0]);
-		std::string infoString(infoLog.begin(), infoLog.end());
-
-		std::cerr << "Shader compilation error: " << std::endl << infoString << std::endl;
-
-		// The program is useless now. So delete it.
-		glDeleteProgram(raytracer_program);
-
-		// Provide the infolog in whatever manner you deem best.
-		// Exit with failure.
-		return EXIT_FAILURE;
-	}
+	auto raytraceShaderSource = loadFileString("resources/shaders/raytrace.cs.glsl");
+	ComputeShader raytraceShader{ raytraceShaderSource };
+	ComputeProgram raytraceProgram{ raytraceShader };
 
 	float quad_points[] = {
 	   1.0f,  0.0f,  0.0f,
@@ -170,55 +130,15 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
-	const char* vertex_shader =
-		"#version 400\n"
-		"in vec3 vp;"
-		"out vec2 v_tex_coord;"
-		"void main() {"
-		"  gl_Position = vec4(2.0 * vp - vec3(1.0, 1.0, 0.0), 1.0);"
-		"  v_tex_coord = vp.xy;"
-		"}";
-
-	const char* fragment_shader =
-		"#version 400\n"
-		"in vec2 v_tex_coord;"
-		"out vec4 frag_colour;"
-		"uniform sampler2D u_texture;"
-		"void main() {"
-		"  frag_colour = texture(u_texture, v_tex_coord);"
-		"}";
-
-	GLuint vs = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vs, 1, &vertex_shader, NULL);
-	glCompileShader(vs);
-
-	if (log_shader_compile_error(vs))
-	{
-		return EXIT_FAILURE;
-	}
-
-	GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fs, 1, &fragment_shader, NULL);
-	glCompileShader(fs);
-
-	if (log_shader_compile_error(fs))
-	{
-		return EXIT_FAILURE;
-	}
-
-	GLuint shader_programme = glCreateProgram();
-	glAttachShader(shader_programme, fs);
-	glAttachShader(shader_programme, vs);
-	glLinkProgram(shader_programme);
+	VertexShader vertexShader{ vertexShaderSource };
+	FragmentShader fragmentShader{ fragmentShaderSource };
+	RenderProgram quadProgram{ vertexShader, fragmentShader };
 
 
 	auto running = true;
 	while (running)
 	{
-		{ // launch compute shaders!
-			glUseProgram(raytracer_program);
-			glDispatchCompute((GLuint)tex_w, (GLuint)tex_h, 1);
-		}
+		raytraceProgram.dispatch();
 
 		// make sure writing to image has finished before read
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -238,7 +158,7 @@ int main()
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glUseProgram(shader_programme);
+		quadProgram.use();
 		glBindVertexArray(quad_vao);
 		glBindTexture(GL_TEXTURE0, tex_output);
 		// draw points 0-3 from the currently bound VAO with current in-use shader

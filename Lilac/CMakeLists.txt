@@ -25,8 +25,8 @@ include_directories("${sfml3d_SOURCE_DIR}/include")
 # Wouldn't be a bad idea to setup different for Win32 vs x64
 link_directories("lib/GLEW/lib/Release/x64")
 
-add_executable (Lilac "src/Lilac/Lilac.cpp")
-add_executable (LilacRaytracer "src/Lilac/LilacRaytracer.cpp")
+add_executable (Lilac "src/Lilac/Lilac.cpp" "src/Lilac/Shader.cpp" "src/Lilac/Program.cpp")
+add_executable (LilacRaytracer "src/Lilac/LilacRaytracer.cpp" "src/Lilac/Shader.cpp" "src/Lilac/Program.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET Lilac PROPERTY CXX_STANDARD 20)
