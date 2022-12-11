@@ -3,21 +3,11 @@
 
 #include <string>
 
-#include <iostream>
-#include <fstream>
-#include <sstream>
 
-
-// TODO: Handle errors
-std::string loadFileString(const std::string& filepath)
+namespace Lilac
 {
-	std::ifstream fp{ filepath, std::ios_base::in };
-	std::stringstream buffer;
-	buffer << fp.rdbuf();
-
-	fp.close();
-
-	return buffer.str();
+// TODO: Handle errors
+std::string loadFileString(const std::string& filepath);
 }
 
 #endif //LILAC_FILE_H

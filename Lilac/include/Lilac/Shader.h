@@ -5,6 +5,8 @@
 
 #include <string>
 
+namespace Lilac
+{
 class Shader
 {
 public:
@@ -34,5 +36,7 @@ class FragmentShader : public Shader
 public:
 	FragmentShader(const std::string& source);
 };
+}
+
 
 #endif // LILAC_SHADER_H

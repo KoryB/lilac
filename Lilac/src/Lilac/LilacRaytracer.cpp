@@ -1,5 +1,3 @@
-
-
 #include <SFML3D/Window.hpp>
 #include <SFML3D/Graphics.hpp>
 
@@ -32,6 +30,8 @@ const std::string fragmentShaderSource =
 	"void main() {"
 	"  frag_colour = texture(u_texture, v_tex_coord);"
 	"}";
+
+using namespace Lilac;
 
 void init_opengl()
 {

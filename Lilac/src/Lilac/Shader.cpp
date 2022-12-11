@@ -1,20 +1,21 @@
 #include <Lilac/Shader.h>
 
-#include <Lilac/File.h>
+#include <Lilac/OpenGL.h>
 
 #include <string>
 #include <memory>
 #include <vector>
+#include <iostream>
 
 
-GLuint Shader::getRawHandle() const
+GLuint Lilac::Shader::getRawHandle() const
 {
 	return m_handle;
 }
 
 
 // TODO: Add logging, error?
-void Shader::compileShader(const std::string& source)
+void Lilac::Shader::compileShader(const std::string& source)
 {
 	auto c_str = source.c_str();
 
@@ -43,19 +44,19 @@ void Shader::compileShader(const std::string& source)
 }
 
 
-ComputeShader::ComputeShader(const std::string& source)
+Lilac::ComputeShader::ComputeShader(const std::string& source)
 {
 	this->m_handle = glCreateShader(GL_COMPUTE_SHADER);
 	this->compileShader(source);
 }
 
-VertexShader::VertexShader(const std::string& source)
+Lilac::VertexShader::VertexShader(const std::string& source)
 {
 	this->m_handle = glCreateShader(GL_VERTEX_SHADER);
 	this->compileShader(source);
 }
 
-FragmentShader::FragmentShader(const std::string& source)
+Lilac::FragmentShader::FragmentShader(const std::string& source)
 {
 	this->m_handle = glCreateShader(GL_FRAGMENT_SHADER);
 	this->compileShader(source);

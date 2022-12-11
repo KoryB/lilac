@@ -4,6 +4,8 @@
 #include <Lilac/OpenGL.h>
 #include <Lilac/Shader.h>
 
+namespace Lilac
+{
 class Program
 {
 public:
@@ -25,9 +27,11 @@ public:
 class ComputeProgram : public Program
 {
 public:
-	ComputeProgram(const ComputeShader &cs);
+	ComputeProgram(const ComputeShader& cs);
 
 	void dispatch(unsigned int x = 1, unsigned int y = 1, unsigned int z = 1);
 };
+}
+
 
 #endif // LILAC_PROGRAM_H

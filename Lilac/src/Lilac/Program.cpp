@@ -5,17 +5,17 @@
 #include <vector>
 
 
-GLuint Program::getRawHandle() const 
+GLuint Lilac::Program::getRawHandle() const 
 {
 	return m_handle;
 }
 
-void Program::use() const
+void Lilac::Program::use() const
 {
 	glUseProgram(m_handle);
 }
 
-void Program::linkProgram()
+void Lilac::Program::linkProgram()
 {
 	glLinkProgram(m_handle);
 	// check for linking errors and validate program as per normal here
@@ -41,7 +41,7 @@ void Program::linkProgram()
 	}
 }
 
-RenderProgram::RenderProgram(const VertexShader &vs, const FragmentShader &fs)
+Lilac::RenderProgram::RenderProgram(const VertexShader &vs, const FragmentShader &fs)
 {
 	m_handle = glCreateProgram();
 
@@ -53,7 +53,7 @@ RenderProgram::RenderProgram(const VertexShader &vs, const FragmentShader &fs)
 	linkProgram();
 }
 
-ComputeProgram::ComputeProgram(const ComputeShader& cs)
+Lilac::ComputeProgram::ComputeProgram(const ComputeShader& cs)
 {
 	m_handle = glCreateProgram();
 
@@ -63,7 +63,7 @@ ComputeProgram::ComputeProgram(const ComputeShader& cs)
 	linkProgram();
 }
 
-void ComputeProgram::dispatch(unsigned int x, unsigned int y, unsigned int z)
+void Lilac::ComputeProgram::dispatch(unsigned int x, unsigned int y, unsigned int z)
 {
 	use();
 	glDispatchCompute((GLuint)x, (GLuint)y, (GLuint)z);
