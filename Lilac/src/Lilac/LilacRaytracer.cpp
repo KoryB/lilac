@@ -9,7 +9,12 @@
 #include <sstream>
 #include <vector>
 
-int log_shader_compile_error(GLuint shader) 
+void init_opengl()
+{
+
+}
+
+int log_shader_compile_error(GLuint shader)
 {
 	GLint isCompiled = 0;
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
@@ -33,9 +38,12 @@ int log_shader_compile_error(GLuint shader)
 	return 0;
 }
 
+// for some reason we're getting just a speck in the output
+// regardless of the scaling of the image
+// bug in `intersect_aabb`?
 int main()
 {
-	sf3d::Window window(sf3d::VideoMode(800, 600), "OpenGL");
+	sf3d::Window window(sf3d::VideoMode(512, 512), "OpenGL");
 	window.setActive(true);
 
 	// This assumes compute shaders are available (gl 4.3+)
