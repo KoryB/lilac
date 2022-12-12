@@ -31,7 +31,7 @@ void Lilac::Program::linkProgram()
 		glGetProgramInfoLog(m_handle, maxLength, &maxLength, &infoLog[0]);
 		std::string infoString(infoLog.begin(), infoLog.end());
 
-		std::cerr << "Shader compilation error: " << std::endl << infoString << std::endl;
+		std::cerr << "Shader link error: " << std::endl << infoString << std::endl;
 
 		// The program is useless now. So delete it.
 		glDeleteProgram(m_handle);

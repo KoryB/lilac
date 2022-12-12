@@ -69,11 +69,11 @@ void main() {
 
 	if (is_intersection)
 	{
-		pixel.x = 1.0;
+		pixel.r = 1.0;
 	}
 	else
 	{
-		// pixel.x = 0.0;
+		pixel.b = 1.0;
 	}
 
 	// output to a specific pixel in the image

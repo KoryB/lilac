@@ -33,25 +33,14 @@ const std::string fragmentShaderSource =
 
 using namespace Lilac;
 
-void init_opengl()
+bool initOpenGl()
 {
-
-}
-
-// for some reason we're getting just a speck in the output
-// regardless of the scaling of the image
-// bug in `intersect_aabb`?
-int main()
-{
-	sf3d::Window window(sf3d::VideoMode(512, 512), "OpenGL");
-	window.setActive(true);
-
 	GLenum err = glewInit(); // REQUIRED to use GLEW functions!
 
 	if (err != GLEW_OK)
 	{
 		std::cerr << "Error: " << glewGetErrorString(err) << std::endl;
-		return EXIT_FAILURE;
+		return false;
 	}
 
 	std::cout << "" << std::endl;
@@ -62,30 +51,13 @@ int main()
 	std::cout << "" << std::endl;
 	std::cout << "Status: Using GLEW " << glewGetString(GLEW_VERSION) << std::endl << std::endl;
 
-
-	// This assumes compute shaders are available (gl 4.3+)
-	int tex_w = 512, tex_h = 512;
-	GLuint tex_output = 0;
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, tex_output);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, tex_w, tex_h, 0, GL_RGBA, GL_FLOAT, NULL);
-
-	glBindImageTexture(0, tex_output, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-
 	int work_group_count[3] = { 0, 0, 0 };
 
 	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &work_group_count[0]);
 	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1, &work_group_count[1]);
 	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 2, &work_group_count[2]);
 
-	std::cout << "Max work group size <" <<
+	std::cout << "Max work group count <" <<
 		work_group_count[0] << ", " <<
 		work_group_count[1] << ", " <<
 		work_group_count[2] << ">" << std::endl;
@@ -102,10 +74,41 @@ int main()
 		work_group_size[2] << ">" << std::endl;
 
 	int work_group_invocations;
-	
+
 	glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &work_group_invocations);
 
 	std::cout << "Max work group invocations: " << work_group_invocations << std::endl;
+
+	return true;
+}
+
+
+int main()
+{
+	sf3d::Window window(sf3d::VideoMode(512, 512), "OpenGL");
+	window.setActive(true);
+
+	if (!initOpenGl())
+	{
+		return EXIT_FAILURE;
+	}
+
+	// This assumes compute shaders are available (gl 4.3+)
+	int tex_w = 512, tex_h = 512;
+	GLuint outputTexture = 0;
+
+	glGenTextures(1, &outputTexture);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, outputTexture);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, tex_w, tex_h, 0, GL_RGBA, GL_FLOAT, NULL);
+
+	glBindImageTexture(0, outputTexture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
 	auto raytraceShaderSource = loadFileString("resources/shaders/raytrace.cs.glsl");
 	ComputeShader raytraceShader{ raytraceShaderSource };
@@ -138,9 +141,11 @@ int main()
 	auto running = true;
 	while (running)
 	{
-		raytraceProgram.dispatch();
+		raytraceProgram.dispatch(tex_w, tex_h);
 
 		// make sure writing to image has finished before read
+		// TODO: Add this into the compute program with a configurable bitset
+		// But research to see if that is bad performance wise, technical details, matters which image we are reading from etc
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 		sf3d::Event event;
@@ -160,7 +165,7 @@ int main()
 
 		quadProgram.use();
 		glBindVertexArray(quad_vao);
-		glBindTexture(GL_TEXTURE0, tex_output);
+		glBindTexture(GL_TEXTURE0, outputTexture);
 		// draw points 0-3 from the currently bound VAO with current in-use shader
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 

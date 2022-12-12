@@ -17,6 +17,8 @@ GLuint Lilac::Shader::getRawHandle() const
 // TODO: Add logging, error?
 void Lilac::Shader::compileShader(const std::string& source)
 {
+	std::cout << "Compiling Shader " << m_handle << ":" << std::endl << source << std::endl;
+
 	auto c_str = source.c_str();
 
 	glShaderSource(m_handle, 1, &c_str, NULL);

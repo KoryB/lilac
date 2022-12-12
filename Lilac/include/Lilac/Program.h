@@ -9,6 +9,7 @@ namespace Lilac
 class Program
 {
 public:
+	// TODO: Consider making these things virtual
 	GLuint getRawHandle() const;
 	void use() const;
 

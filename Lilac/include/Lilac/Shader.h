@@ -10,6 +10,7 @@ namespace Lilac
 class Shader
 {
 public:
+	// TODO: Consider making these things virtual
 	GLuint getRawHandle() const;
 
 	// TODO: Get hot recompilation working
