@@ -65,7 +65,7 @@ int main()
 
 	// This assumes compute shaders are available (gl 4.3+)
 	int tex_w = 512, tex_h = 512;
-	GLuint tex_output;
+	GLuint tex_output = 0;
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, tex_output);
@@ -79,7 +79,7 @@ int main()
 
 	glBindImageTexture(0, tex_output, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
-	int work_group_count[3];
+	int work_group_count[3] = { 0, 0, 0 };
 
 	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &work_group_count[0]);
 	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1, &work_group_count[1]);
@@ -90,7 +90,7 @@ int main()
 		work_group_count[1] << ", " <<
 		work_group_count[2] << ">" << std::endl;
 
-	int work_group_size[3];
+	int work_group_size[3] = { 0, 0, 0 };
 
 	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &work_group_size[0]);
 	glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1, &work_group_size[1]);
