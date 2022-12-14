@@ -4,11 +4,27 @@ layout(local_size_x = 1, local_size_y = 1) in;
 layout(rgba32f, binding = 0) uniform image2D img_output;
 
 
+const int face_right = 0;
+const int face_left = 1;
+const int face_up = 2;
+const int face_down = 3;
+const int face_front = 4;
+const int face_back = 5;
+
 const vec3 inf3 = vec3(1.0) / vec3(0.0);
 const vec3 neg_inf3 = vec3(-1.0) / vec3(0.0);
 
 const float inf = 1.0 / 0.0;
 const float neg_inf = -1.0 / 0.0;
+
+const vec3 aabb_normals[6] = vec3[6](
+	vec3(1.0, 0.0, 0.0),
+	vec3(-1.0, 0.0, 0.0),
+	vec3(0.0, 1.0, 0.0),
+	vec3(0.0, -1.0, 0.0),
+	vec3(0.0, 0.0, 1.0),
+	vec3(0.0, 0.0, -1.0)
+);
 
 
 float min3(vec3 v)
@@ -59,8 +75,6 @@ float intersect_aabb(vec3 aabb_min, vec3 aabb_max, vec3 ray_origin, vec3 ray_inv
 	return t_hit;
 }
 
-// TODO: Define constants for face indices
-// R, L, U, D, F, B (I think)
 int get_face_index(vec3 p)
 {
 	int axis_index = argmax(abs(p));
@@ -83,6 +97,9 @@ void main() {
 	vec3 ray_right = cross(ray_direction, ray_up);
 	vec3 ray_origin = vec3(1.0, 1.0, 1.0) + ray_right * pixel_coords_v3.x + ray_up * pixel_coords_v3.y;
 
+	vec3 light_position = vec3(1.0, 1.0, 1.0);
+	vec3 light_color = vec3(1.0, 0.0, 0.0);
+
 	vec3 aabb_min = vec3(-0.5);
 	vec3 aabb_max = vec3(0.5);
 	vec3 aabb_center = (aabb_min + aabb_max) / 2.0;
@@ -100,12 +117,14 @@ void main() {
 	vec3 hit_normalized = hit_relative / aabb_extents;
 
 	int face_index = get_face_index(hit_normalized);
+	vec3 face_normal = aabb_normals[face_index];
+	vec3 to_light = normalize(light_position - hit_absolute);
 
 	vec3 color = vec3(0.0);
 
 	if (t_hit > 0)
 	{
-		color[face_index / 2] = t_hit / 2.0; // intentional integer division truncation
+		color += clamp(dot(face_normal, to_light) * light_color, 0.0, 1.0);
 	}
 
 	vec4 pixel = vec4(color, 1.0);
