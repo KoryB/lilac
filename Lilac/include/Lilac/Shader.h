@@ -16,6 +16,9 @@ public:
 	// TODO: Get hot recompilation working
 	void compileShader(const std::string& source);
 
+	// TODO: make constructor private (I think?)
+	// TODO: make destructor
+
 protected:
 	GLuint m_handle;
 };

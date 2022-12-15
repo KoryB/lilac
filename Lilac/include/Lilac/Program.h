@@ -13,6 +13,9 @@ public:
 	GLuint getRawHandle() const;
 	void use() const;
 
+	// TODO: make constructor private (I think?)
+	// TODO: make destructor
+
 protected:
 	GLuint m_handle;
 
