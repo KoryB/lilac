@@ -1,7 +1,12 @@
 #version 430
 
-layout(local_size_x = 1, local_size_y = 1) in;
-layout(rgba32f, binding = 0) uniform image2D img_output;
+layout(local_size_x = 2, local_size_y = 2, local_size_z = 1) in;
+// layout(rgba32f, binding = 0) uniform image2D img_output;
+
+layout(std430, binding = 0) buffer Pixels
+{
+	vec4 colors[4]; // Should match local size
+};
 
 
 const int face_right = 0;
@@ -83,19 +88,32 @@ int get_face_index(vec3 p)
 	return face_index;
 }
 
+vec3 pixel_coords_to_camera_coords(vec2 pixel_coords, ivec2 image_size, vec3 camera_forward, vec3 camera_up, vec3 camera_origin)
+{
+	vec2 half_image_size = image_size / 2.0;
+	vec2 local_coords_v2 = (pixel_coords - half_image_size) / half_image_size;
+	vec3 local_coords = vec3(local_coords_v2, 0.0);
+
+	vec3 camera_right = cross(camera_forward, camera_up);
+	vec3 local_up = cross(camera_right, camera_forward);
+	vec3 camera_coords = camera_origin + camera_right * local_coords.x + local_up * local_coords.y;
+
+	return camera_coords;
+}
+
 
 // Simple update
 void main() {
 	// get index in global work group i.e x,y position
-	ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
-	vec3 pixel_coords_v3 = vec3(pixel_coords.x, pixel_coords.y, 0.0);
-	ivec2 image_size = imageSize(img_output);
-	pixel_coords_v3 = (pixel_coords_v3 - float(image_size / 2)) / float(image_size / 2);
+	vec2 pixel_coords = ivec2(gl_WorkGroupID.xy) + gl_LocalInvocationID.xy / 2.0;
+	ivec2 image_size = ivec2(512, 512); //TODO: Configure
 
-	vec3 ray_direction = normalize(vec3(-1.0, -1.0, -1.0));
-	vec3 ray_up = normalize(vec3(0.0, 1.0, 0.0));
-	vec3 ray_right = cross(ray_direction, ray_up);
-	vec3 ray_origin = vec3(1.0, 1.0, 1.0) + ray_right * pixel_coords_v3.x + ray_up * pixel_coords_v3.y;
+	vec3 camera_forward = normalize(vec3(-1.0, -1.0, -1.0));
+	vec3 camera_up = normalize(vec3(0.0, 1.0, 0.0));
+	vec3 camera_origin = vec3(1.0, 1.0, 1.0);
+
+	vec3 ray_direction = camera_forward;
+	vec3 ray_origin = pixel_coords_to_camera_coords(pixel_coords, image_size, camera_forward, camera_up, camera_origin);
 
 	vec3 light_position = vec3(1.0, 1.0, 1.0);
 	vec3 light_color = vec3(1.0, 0.0, 0.0);
@@ -129,5 +147,8 @@ void main() {
 
 	vec4 pixel = vec4(color, 1.0);
 	// output to a specific pixel in the image
-	imageStore(img_output, pixel_coords, pixel);
+	// imageStore(img_output, ivec2(floor(pixel_coords)), pixel);
+
+	uint index = gl_LocalInvocationID.x + gl_LocalInvocationID.y % 2;
+	colors[index] = pixel;
 }
