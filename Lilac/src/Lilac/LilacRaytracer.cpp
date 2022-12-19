@@ -129,6 +129,7 @@ int main()
 
 	GLuint buffer = 0;
 	glGenBuffers(1, &buffer);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, 4*4*512*512, NULL, GL_DYNAMIC_COPY); // TODO: Look more into `usage` parameter, it's a bit unclear which I should pick here
 
 	GLuint quad_vbo = 0;
