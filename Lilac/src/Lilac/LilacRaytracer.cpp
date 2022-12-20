@@ -29,12 +29,15 @@ const std::string fragmentShaderSource =
 	"{\n"
 	"	vec4 colors[4]; // Should match compute shader\n"
 	"};\n"
+	"const ivec2 image_size = ivec2(512, 512);\n"
 	"in vec2 v_tex_coord;\n"
-	"out vec4 frag_colour;\n"
+	"out vec4 frag_color;\n"
 	"\n"
 	"void main() {\n"
-	"  int index = int(floor(gl_FragCoord.x + gl_FragCoord.y * 512.0));\n"
-	"  frag_colour = 0.25 * (colors[index] + colors[index+1] + colors[index+2] + colors[index+3]);\n"
+	"  vec2 frag_coord = (image_size - ivec2(1)) * v_tex_coord; // Subtract 1 because we go from 0..1 inclusive\n"
+	"  int index = 4*int(floor(frag_coord.x + frag_coord.y * image_size.y));\n"
+	"  frag_color = vec4(0.0, 0.0, 0.0, 1.0);\n"
+	"  frag_color = 0.25 * (colors[index] + colors[index+1] + colors[index+2] + colors[index+3]);\n"
 	"}\n";
 
 using namespace Lilac;
@@ -42,7 +45,7 @@ using namespace Lilac;
 bool initOpenGl()
 {
 	GLenum err = glewInit(); // REQUIRED to use GLEW functions!
-
+	
 	if (err != GLEW_OK)
 	{
 		std::cerr << "Error: " << glewGetErrorString(err) << std::endl;
@@ -88,6 +91,9 @@ bool initOpenGl()
 	return true;
 }
 
+// We had some weird artifacting going on at one point, so somehow the write/read operation is working on some level
+// Now it is just a matter of getting the writes in the proper format for the read to do its thing
+// But for now, rest
 
 int main()
 {
@@ -128,9 +134,15 @@ int main()
 	};
 
 	GLuint buffer = 0;
+	const int raysPerPixel = 4;
+	const int channelsPerPixel = 4;
+	const int imageSize = tex_w * tex_h;
+	const int bytesPerFloat = 4;
+	const int bufferSize = bytesPerFloat * raysPerPixel * channelsPerPixel * imageSize;
+
 	glGenBuffers(1, &buffer);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, 4*4*512*512, NULL, GL_DYNAMIC_COPY); // TODO: Look more into `usage` parameter, it's a bit unclear which I should pick here
+	glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, NULL, GL_DYNAMIC_COPY); // TODO: Look more into `usage` parameter, it's a bit unclear which I should pick here
 
 	GLuint quad_vbo = 0;
 	glGenBuffers(1, &quad_vbo);
@@ -152,7 +164,8 @@ int main()
 	auto running = true;
 	while (running)
 	{
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
+		raytraceProgram.use();
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buffer);
 		raytraceProgram.dispatch(tex_w, tex_h);
 
 		// make sure writing to image has finished before read
@@ -178,7 +191,7 @@ int main()
 		quadProgram.use();
 		glBindVertexArray(quad_vao);
 		glBindTexture(GL_TEXTURE0, outputTexture);
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buffer);
 		// draw points 0-3 from the currently bound VAO with current in-use shader
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 

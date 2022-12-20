@@ -149,6 +149,7 @@ void main() {
 	// output to a specific pixel in the image
 	// imageStore(img_output, ivec2(floor(pixel_coords)), pixel);
 
-	uint index = gl_LocalInvocationID.x + gl_LocalInvocationID.y % 2;
-	colors[index] = pixel;
+	uint pixel_index = gl_WorkGroupID.x + gl_WorkGroupID.y * image_size.y;
+	uint local_index = gl_LocalInvocationID.x + gl_LocalInvocationID.y % 2;
+	colors[4*pixel_index + local_index] = pixel;
 }

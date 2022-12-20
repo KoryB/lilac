@@ -65,6 +65,5 @@ Lilac::ComputeProgram::ComputeProgram(const ComputeShader& cs)
 
 void Lilac::ComputeProgram::dispatch(unsigned int x, unsigned int y, unsigned int z)
 {
-	use();
 	glDispatchCompute((GLuint)x, (GLuint)y, (GLuint)z);
 }
