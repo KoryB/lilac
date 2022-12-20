@@ -1,6 +1,6 @@
 #version 430
 
-layout(local_size_x = 2, local_size_y = 2, local_size_z = 1) in;
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 // layout(rgba32f, binding = 0) uniform image2D img_output;
 
 layout(std430, binding = 0) buffer Pixels
@@ -105,7 +105,7 @@ vec3 pixel_coords_to_camera_coords(vec2 pixel_coords, ivec2 image_size, vec3 cam
 // Simple update
 void main() {
 	// get index in global work group i.e x,y position
-	vec2 pixel_coords = ivec2(gl_WorkGroupID.xy) + gl_LocalInvocationID.xy / 2.0;
+	vec2 pixel_coords = ivec2(gl_WorkGroupID.xy);// +gl_LocalInvocationID.xy / 2.0;
 	ivec2 image_size = ivec2(512, 512); //TODO: Configure
 
 	vec3 camera_forward = normalize(vec3(-1.0, -1.0, -1.0));
@@ -150,6 +150,6 @@ void main() {
 	// imageStore(img_output, ivec2(floor(pixel_coords)), pixel);
 
 	uint pixel_index = gl_WorkGroupID.x + gl_WorkGroupID.y * image_size.y;
-	uint local_index = gl_LocalInvocationID.x + gl_LocalInvocationID.y % 2;
-	colors[4*pixel_index + local_index] = pixel;
+	// uint local_index = gl_LocalInvocationID.x + gl_LocalInvocationID.y % 2;
+	colors[pixel_index] = pixel;
 }

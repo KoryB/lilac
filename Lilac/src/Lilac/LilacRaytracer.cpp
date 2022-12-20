@@ -35,9 +35,9 @@ const std::string fragmentShaderSource =
 	"\n"
 	"void main() {\n"
 	"  vec2 frag_coord = (image_size - ivec2(1)) * v_tex_coord; // Subtract 1 because we go from 0..1 inclusive\n"
-	"  int index = 4*int(floor(frag_coord.x + frag_coord.y * image_size.y));\n"
+	"  int index = int(floor(frag_coord.x + frag_coord.y * image_size.y));\n"
 	"  frag_color = vec4(0.0, 0.0, 0.0, 1.0);\n"
-	"  frag_color = 0.25 * (colors[index] + colors[index+1] + colors[index+2] + colors[index+3]);\n"
+	"  frag_color = colors[index]; // 0.25 * (colors[index] + colors[index+1] + colors[index+2] + colors[index+3]);\n"
 	"}\n";
 
 using namespace Lilac;
@@ -134,7 +134,7 @@ int main()
 	};
 
 	GLuint buffer = 0;
-	const int raysPerPixel = 4;
+	const int raysPerPixel = 1;
 	const int channelsPerPixel = 4;
 	const int imageSize = tex_w * tex_h;
 	const int bytesPerFloat = 4;
