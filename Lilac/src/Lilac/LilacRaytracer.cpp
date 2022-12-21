@@ -27,18 +27,19 @@ const std::string fragmentShaderSource =
 	"#version 430\n"
 	"layout(std430, binding = 0) buffer Pixels\n"
 	"{\n"
-	"	vec4 colors[512*512]; // Should match compute shader\n"
+	"	vec4 colors[4*512*512]; // Should match compute shader\n"
 	"};\n"
 	"const ivec2 image_size = ivec2(512, 512);\n"
 	"in vec2 v_tex_coord;\n"
 	"out vec4 frag_color;\n"
 	"\n"
 	"void main() {\n"
-	"  vec2 frag_coord = (image_size - ivec2(1)) * v_tex_coord; // Subtract 1 because we go from 0..1 inclusive\n"
-	"  int index = int(floor(frag_coord.x + frag_coord.y * image_size.y));\n"
+	"  //vec2 frag_coord = (image_size - ivec2(1)) * v_tex_coord; // Subtract 1 because we go from 0..1 inclusive\n"
+	"  int index = int(floor(gl_FragCoord.x + gl_FragCoord.y * image_size.y));\n"
 	"  frag_color = vec4(0.0, 0.0, 0.0, 1.0);\n"
-	"  //frag_color.rg = v_tex_coord;\n"
-	"  frag_color = colors[index]; // 0.25 * (colors[index] + colors[index+1] + colors[index+2] + colors[index+3]);\n"
+	"  frag_color.rg = gl_FragCoord.xy / image_size;\n"
+	"  //frag_color.rg = gl_FragCoord.xy / vec2(image_size);\n"
+	"  //frag_color = colors[index]; // 0.25 * (colors[index] + colors[index+1] + colors[index+2] + colors[index+3]);\n"
 	"}\n";
 
 using namespace Lilac;
@@ -133,7 +134,7 @@ int main()
 	};
 
 	GLuint buffer = 0;
-	const int raysPerPixel = 1;
+	const int raysPerPixel = 4;
 	const int channelsPerPixel = 4;
 	const int imageSize = tex_w * tex_h;
 	const int bytesPerFloat = 4;
@@ -195,5 +196,35 @@ int main()
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 		window.display();
+
+		/*std::vector<float> bufferVector(bufferSize);
+		glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, bufferSize, bufferVector.data());
+
+		std::ofstream bufferFile;
+		bufferFile.open("buffer.csv");
+
+		for (int y = 0; y < tex_h; y++)
+		{
+			for (int x = 0; x < tex_w; x++)
+			{
+				bufferFile << "<";
+				for (int i = 0; i < 4; i++)
+				{
+					auto f = bufferVector[y * tex_w * 4 + x * 4 + i];
+
+					bufferFile << f;
+
+					if (i != 3)
+					{
+						bufferFile << " ";
+					}
+				}
+				bufferFile << ">, ";
+			}
+			bufferFile << std::endl;
+		}
+		bufferFile.close();
+
+		return 0;*/
 	}
 }

@@ -5,7 +5,7 @@ layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 layout(std430, binding = 0) buffer Pixels
 {
-	vec4 colors[512*512]; // Should match local size * image size
+	vec4 colors[4*512*512]; // Should match local size * image size
 };
 
 
@@ -88,7 +88,7 @@ int get_face_index(vec3 p)
 	return face_index;
 }
 
-vec3 pixel_coords_to_camera_coords(vec2 pixel_coords, ivec2 image_size, vec3 camera_forward, vec3 camera_up, vec3 camera_origin)
+vec3 pixel_coords_to_camera_coords(vec2 pixel_coords, vec2 image_size, vec3 camera_forward, vec3 camera_up, vec3 camera_origin)
 {
 	vec2 half_image_size = image_size / 2.0;
 	vec2 local_coords_v2 = (pixel_coords - half_image_size) / half_image_size;
@@ -105,51 +105,53 @@ vec3 pixel_coords_to_camera_coords(vec2 pixel_coords, ivec2 image_size, vec3 cam
 // Simple update
 void main() {
 	// get index in global work group i.e x,y position
-	vec2 pixel_coords = ivec2(gl_WorkGroupID.xy);// +gl_LocalInvocationID.xy / 2.0;
-	ivec2 image_size = ivec2(512, 512); //TODO: Configure
+//	vec2 pixel_coords = vec2(gl_WorkGroupID.xy);// +gl_LocalInvocationID.xy / 2.0;
+//
+//	vec3 camera_forward = normalize(vec3(-1.0, -1.0, -1.0));
+//	vec3 camera_up = normalize(vec3(0.0, 1.0, 0.0));
+//	vec3 camera_origin = vec3(2.0, 2.0, 2.0);
+//
+//	vec3 ray_direction = camera_forward;
+//	vec3 ray_origin = pixel_coords_to_camera_coords(pixel_coords, gl_NumWorkGroups.xy, camera_forward, camera_up, camera_origin);
+//
+//	vec3 light_position = vec3(1.0, 1.0, 1.0);
+//	vec3 light_color = vec3(1.0, 0.0, 0.0);
+//
+//	vec3 aabb_min = vec3(-0.5);
+//	vec3 aabb_max = vec3(0.5);
+//	vec3 aabb_center = (aabb_min + aabb_max) / 2.0;
+//	vec3 aabb_extents = aabb_max - aabb_min;
+//
+//	float t_hit = intersect_aabb(
+//		aabb_min, 
+//		aabb_max, 
+//		ray_origin,
+//		1.0 / ray_direction
+//	);
+//
+//	vec3 hit_absolute = ray_origin + ray_direction * t_hit;
+//	vec3 hit_relative = hit_absolute - aabb_center;
+//	vec3 hit_normalized = hit_relative / aabb_extents;
+//
+//	int face_index = get_face_index(hit_normalized);
+//	vec3 face_normal = aabb_normals[face_index];
+//	vec3 to_light = normalize(light_position - hit_absolute);
+//
+//	vec3 color = vec3(0.0);
+//
+//	if (t_hit > 0)
+//	{
+//		color += clamp(dot(face_normal, to_light) * light_color, 0.0, 1.0);
+//	}
 
-	vec3 camera_forward = normalize(vec3(-1.0, -1.0, -1.0));
-	vec3 camera_up = normalize(vec3(0.0, 1.0, 0.0));
-	vec3 camera_origin = vec3(2.0, 2.0, 2.0);
-
-	vec3 ray_direction = camera_forward;
-	vec3 ray_origin = pixel_coords_to_camera_coords(pixel_coords, image_size, camera_forward, camera_up, camera_origin);
-
-	vec3 light_position = vec3(1.0, 1.0, 1.0);
-	vec3 light_color = vec3(1.0, 0.0, 0.0);
-
-	vec3 aabb_min = vec3(-0.5);
-	vec3 aabb_max = vec3(0.5);
-	vec3 aabb_center = (aabb_min + aabb_max) / 2.0;
-	vec3 aabb_extents = aabb_max - aabb_min;
-
-	float t_hit = intersect_aabb(
-		aabb_min, 
-		aabb_max, 
-		ray_origin,
-		1.0 / ray_direction
-	);
-
-	vec3 hit_absolute = ray_origin + ray_direction * t_hit;
-	vec3 hit_relative = hit_absolute - aabb_center;
-	vec3 hit_normalized = hit_relative / aabb_extents;
-
-	int face_index = get_face_index(hit_normalized);
-	vec3 face_normal = aabb_normals[face_index];
-	vec3 to_light = normalize(light_position - hit_absolute);
-
-	vec3 color = vec3(0.0);
-
-	if (t_hit > 0)
-	{
-		color += clamp(dot(face_normal, to_light) * light_color, 0.0, 1.0);
-	}
-
-	vec4 pixel = vec4(color, 1.0);
+	// vec4 pixel = vec4(color, 1.0);
 	// output to a specific pixel in the image
 	// imageStore(img_output, ivec2(floor(pixel_coords)), pixel);
 
-	uint pixel_index = gl_WorkGroupID.x + gl_WorkGroupID.y * image_size.y;
+	vec4 pixel = vec4(0.0, 0.0, 0.0, 1.0);
+	pixel.rg = vec2(gl_WorkGroupID.xy) / vec2(gl_NumWorkGroups.xy);
+
+	uint pixel_index = gl_WorkGroupID.x + gl_WorkGroupID.y * gl_NumWorkGroups.y;
 	// uint local_index = gl_LocalInvocationID.x + gl_LocalInvocationID.y % 2;
 	colors[pixel_index] = pixel;
 }
