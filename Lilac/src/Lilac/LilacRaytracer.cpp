@@ -27,7 +27,7 @@ const std::string fragmentShaderSource =
 	"#version 430\n"
 	"layout(std430, binding = 0) buffer Pixels\n"
 	"{\n"
-	"	vec4 colors[4]; // Should match compute shader\n"
+	"	vec4 colors[512*512]; // Should match compute shader\n"
 	"};\n"
 	"const ivec2 image_size = ivec2(512, 512);\n"
 	"in vec2 v_tex_coord;\n"
@@ -37,6 +37,7 @@ const std::string fragmentShaderSource =
 	"  vec2 frag_coord = (image_size - ivec2(1)) * v_tex_coord; // Subtract 1 because we go from 0..1 inclusive\n"
 	"  int index = int(floor(frag_coord.x + frag_coord.y * image_size.y));\n"
 	"  frag_color = vec4(0.0, 0.0, 0.0, 1.0);\n"
+	"  //frag_color.rg = v_tex_coord;\n"
 	"  frag_color = colors[index]; // 0.25 * (colors[index] + colors[index+1] + colors[index+2] + colors[index+3]);\n"
 	"}\n";
 
@@ -91,9 +92,7 @@ bool initOpenGl()
 	return true;
 }
 
-// We had some weird artifacting going on at one point, so somehow the write/read operation is working on some level
-// Now it is just a matter of getting the writes in the proper format for the read to do its thing
-// But for now, rest
+// camera logic might be broken here actually
 
 int main()
 {

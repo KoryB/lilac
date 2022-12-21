@@ -5,7 +5,7 @@ layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 layout(std430, binding = 0) buffer Pixels
 {
-	vec4 colors[4]; // Should match local size
+	vec4 colors[512*512]; // Should match local size * image size
 };
 
 
@@ -110,7 +110,7 @@ void main() {
 
 	vec3 camera_forward = normalize(vec3(-1.0, -1.0, -1.0));
 	vec3 camera_up = normalize(vec3(0.0, 1.0, 0.0));
-	vec3 camera_origin = vec3(1.0, 1.0, 1.0);
+	vec3 camera_origin = vec3(2.0, 2.0, 2.0);
 
 	vec3 ray_direction = camera_forward;
 	vec3 ray_origin = pixel_coords_to_camera_coords(pixel_coords, image_size, camera_forward, camera_up, camera_origin);
