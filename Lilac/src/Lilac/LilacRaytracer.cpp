@@ -23,25 +23,6 @@ const std::string vertexShaderSource =
 	"}\n";
 
 // TODO: Change to version 430?
-const std::string fragmentShaderSource =
-"#version 430\n"
-"layout(std430, binding = 0) buffer Pixels\n"
-"{\n"
-"	vec4 colors[]; // Should match compute shader\n"
-"};\n"
-"const ivec2 image_size = ivec2(512, 512);\n"
-"in vec2 v_tex_coord;\n"
-"out vec4 frag_color;\n"
-"\n"
-"void main() {\n"
-    //"  vec2 frag_coord = floor(gl_FragCoord.xy * image_size / vec2(512, 512));\n"
-	"  vec2 frag_coord = floor((image_size - ivec2(1)) * v_tex_coord)\n; // Subtract 1 because we go from 0..1 inclusive\n"
-	"  int index = int(frag_coord.x + frag_coord.y * image_size.x);\n"
-	"  frag_color = vec4(0.0, 0.0, 0.0, 1.0);\n"
-	//"  frag_color.r = index / float(image_size.x * image_size.y);\n"
-	//"  frag_color.rg = frag_coord.xy / vec2(image_size);\n"
-	"  frag_color = colors[index]; // 0.25 * (colors[index] + colors[index+1] + colors[index+2] + colors[index+3]);\n"
-	"}\n";
 
 using namespace Lilac;
 
@@ -135,7 +116,7 @@ int main()
 	};
 
 	GLuint buffer = 0;
-	const int raysPerPixel = 1;
+	const int raysPerPixel = 16 * 16;
 	const int channelsPerPixel = 4;
 	const int imageSize = tex_w * tex_h;
 	const int bytesPerFloat = 4;
@@ -157,44 +138,13 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 
+	auto fragmentShaderSource = loadFileString("resources/shaders/raytrace.fs.glsl");
+
 	VertexShader vertexShader{ vertexShaderSource };
 	FragmentShader fragmentShader{ fragmentShaderSource };
 	RenderProgram quadProgram{ vertexShader, fragmentShader };
 
 	auto sleepTime = sf3d::milliseconds(1000);
-
-	std::vector<float> bufferPrePopulated;
-	int i = 0;
-	bool isColor = false;
-	float color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-	for (int y = 0; y < tex_h; y++)
-	{
-		for (int x = 0; x < tex_w; x++)
-		{
-			if (i++ % 8 == 0)
-			{
-				isColor = !isColor;
-			}
-
-			if (isColor)
-			{
-				color[0] = ((float)x) / tex_w;
-				color[1] = ((float)y) / tex_h;
-			}
-			else
-			{
-				color[0] = color[1] = 0.0f;
-			}
-
-			bufferPrePopulated.push_back(color[0]);
-			bufferPrePopulated.push_back(color[1]);
-			bufferPrePopulated.push_back(color[2]);
-			bufferPrePopulated.push_back(color[3]);
-		}
-	}
-
-	// glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
-	// glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, bufferPrePopulated.data(), GL_DYNAMIC_COPY);
 
 	auto running = true;
 	while (running)
