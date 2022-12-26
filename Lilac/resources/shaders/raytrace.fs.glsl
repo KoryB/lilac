@@ -16,7 +16,7 @@ void main()
 	vec2 frag_coord = floor((image_size - ivec2(1)) * v_tex_coord); // Subtract 1 because we go from 0..1 inclusive
 	ivec2 frag_coord_ivec = ivec2(frag_coord);
 	
-	uint index = work_group_total_size * (frag_coord_ivec.x + frag_coord_ivec.y * image_size.x);
+	uint index = uint(work_group_total_size * (frag_coord_ivec.x + frag_coord_ivec.y * image_size.x));
 	frag_color = vec4(0.0, 0.0, 0.0, 1.0);
 
 	// frag_color.r = index / float(image_size.x * image_size.y);

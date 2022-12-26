@@ -15,12 +15,20 @@ FetchContent_Declare(
 	GIT_TAG vs2015
 )
 
+FetchContent_Declare(
+	GLM
+	GIT_REPOSITORY https://github.com/g-truc/glm.git
+	GIT_TAG 0.9.9.8
+)
+
 FetchContent_MakeAvailable(SFML3D)
+FetchContent_MakeAvailable(GLM)
 
 # Add source to this project's executable.
 include_directories("include")
 include_directories("lib/GLEW/include")
 include_directories("${sfml3d_SOURCE_DIR}/include")
+include_directories("${glm_SOURCE_DIR}/")
 
 # Wouldn't be a bad idea to setup different for Win32 vs x64
 link_directories("lib/GLEW/lib/Release/x64")
