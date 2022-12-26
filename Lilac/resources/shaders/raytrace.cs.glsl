@@ -15,7 +15,7 @@ layout(std430, binding = 0) buffer Pixels
 
 layout(std430, binding = 1) buffer InputAABBs
 {
-	AABB input_aabbs[16]; // TODO: Simple pre-processor, probably something online
+	AABB input_aabbs[]; // TODO: Simple pre-processor, probably something online
 };
 
 
@@ -142,7 +142,7 @@ void main() {
 	float t_hit = 1000000; // TODO: Make max value for raytracer
 	int hit_index = -1;
 
-	for (int i = 0; i < 16; i++)
+	for (int i = 0; i < 100*100; i++)
 	{
 		AABB box = input_aabbs[i];
 

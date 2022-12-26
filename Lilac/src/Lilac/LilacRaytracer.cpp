@@ -133,9 +133,11 @@ int main()
 	GLuint aabbBuffer = 0;
 	std::vector<glm::vec4> aabbVectors;
 
-	for (int x = 0; x < 4; x++)
+	// TODO: This is way too many boxes for performance to handle on the compute shader side, need octtree stuff asap
+	// TODO: calculate max boxes in 128MB, can easily use packing to store parent index information
+	for (int x = 0; x < 100; x++)
 	{
-		for (int z = 0; z < 4; z++)
+		for (int z = 0; z < 100; z++)
 		{
 			glm::vec4 min(x * 0.35, 0.5, z * 0.35, 0.0);
 			glm::vec4 max = min + glm::vec4(0.25);
