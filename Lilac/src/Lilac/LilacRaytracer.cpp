@@ -7,6 +7,8 @@
 #include <Lilac/Program.h>
 #include <Lilac/File.h>
 
+#include <glm/vec4.hpp>
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -75,7 +77,8 @@ bool initOpenGl()
 	return true;
 }
 
-// camera logic might be broken here actually
+// Next step: moving camera!
+// Then, more boxes!
 
 int main()
 {
@@ -126,6 +129,27 @@ int main()
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffer);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, NULL, GL_DYNAMIC_COPY); // TODO: Look more into `usage` parameter, it's a bit unclear which I should pick here
 
+
+	GLuint aabbBuffer = 0;
+	std::vector<glm::vec4> aabbVectors;
+
+	for (int x = 0; x < 4; x++)
+	{
+		for (int z = 0; z < 4; z++)
+		{
+			glm::vec4 min(x * 0.35, 0.5, z * 0.35, 0.0);
+			glm::vec4 max = min + glm::vec4(0.25);
+
+			aabbVectors.push_back(min);
+			aabbVectors.push_back(max);
+		}
+	}
+
+	glGenBuffers(1, &aabbBuffer);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, aabbBuffer);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * 4 * aabbVectors.size(), aabbVectors.data(), GL_DYNAMIC_COPY); // TODO: Lookup proper usage
+
+
 	GLuint quad_vbo = 0;
 	glGenBuffers(1, &quad_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
@@ -151,6 +175,7 @@ int main()
 	{
 		raytraceProgram.use();
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buffer);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, aabbBuffer);
 		raytraceProgram.dispatch(tex_w, tex_h);
 
 		// make sure writing to image has finished before read

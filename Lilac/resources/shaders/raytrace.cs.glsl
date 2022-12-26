@@ -1,11 +1,21 @@
 #version 430
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
-// layout(rgba32f, binding = 0) uniform image2D img_output;
+
+struct AABB
+{
+	vec4 min;
+	vec4 max;
+};
 
 layout(std430, binding = 0) buffer Pixels
 {
-	vec4 colors[]; // Should match local size * image size
+	vec4 colors[];
+};
+
+layout(std430, binding = 1) buffer InputAABBs
+{
+	AABB input_aabbs[16]; // TODO: Simple pre-processor, probably something online
 };
 
 
@@ -60,10 +70,10 @@ int argmax(vec3 v)
 // where 0.0 * inf = NaN, and NaN's are propigated based on the first argument 
 // in standard implementations
 // see: https://tavianator.com/2022/ray_box_boundary.html
-float intersect_aabb(vec3 aabb_min, vec3 aabb_max, vec3 ray_origin, vec3 ray_inverse_direction)
+float intersect_aabb(AABB aabb, vec3 ray_origin, vec3 ray_inverse_direction)
 {
-	vec3 t_aabb_min = (aabb_min - ray_origin) * ray_inverse_direction;
-	vec3 t_aabb_max = (aabb_max - ray_origin) * ray_inverse_direction;
+	vec3 t_aabb_min = (aabb.min.xyz - ray_origin) * ray_inverse_direction;
+	vec3 t_aabb_max = (aabb.max.xyz - ray_origin) * ray_inverse_direction;
 
 	vec3 t_near_vec = min(max(t_aabb_min, neg_inf), max(t_aabb_max, neg_inf));
 	vec3 t_far_vec = max(min(t_aabb_min, inf), min(t_aabb_max, inf));
@@ -101,6 +111,16 @@ vec3 pixel_coords_to_camera_coords(vec2 pixel_coords, vec2 image_size, vec3 came
 	return camera_coords;
 }
 
+vec4 get_aabb_center(AABB aabb)
+{
+	return (aabb.min + aabb.max) / 2.0;
+}
+
+vec4 get_aabb_extents(AABB aabb)
+{
+	return aabb.max - aabb.min;
+}
+
 
 // Simple update
 void main() {
@@ -113,35 +133,42 @@ void main() {
 	vec3 camera_origin = vec3(2.0, 2.0, 2.0);
 
 	vec3 ray_direction = camera_forward;
+	vec3 ray_inv_direction = 1.0 / ray_direction;
 	vec3 ray_origin = pixel_coords_to_camera_coords(pixel_coords, gl_NumWorkGroups.xy, camera_forward, camera_up, camera_origin);
 
-	vec3 light_position = vec3(1.0, 1.0, 1.0);
+	vec3 light_position = camera_origin;
 	vec3 light_color = vec3(1.0, 0.0, 0.0);
 
-	vec3 aabb_min = vec3(-0.5);
-	vec3 aabb_max = vec3(0.5);
-	vec3 aabb_center = (aabb_min + aabb_max) / 2.0;
-	vec3 aabb_extents = aabb_max - aabb_min;
+	float t_hit = 1000000; // TODO: Make max value for raytracer
+	int hit_index = -1;
 
-	float t_hit = intersect_aabb(
-		aabb_min, 
-		aabb_max, 
-		ray_origin,
-		1.0 / ray_direction
-	);
+	for (int i = 0; i < 16; i++)
+	{
+		AABB box = input_aabbs[i];
 
-	vec3 hit_absolute = ray_origin + ray_direction * t_hit;
-	vec3 hit_relative = hit_absolute - aabb_center;
-	vec3 hit_normalized = hit_relative / aabb_extents;
+		float t_hit_box = intersect_aabb(box, ray_origin, ray_inv_direction);
+		bool is_closer = t_hit_box > 0 && t_hit_box < t_hit;
 
-	int face_index = get_face_index(hit_normalized);
-	vec3 face_normal = aabb_normals[face_index];
-	vec3 to_light = normalize(light_position - hit_absolute);
+		t_hit = float(!is_closer) * t_hit + float(is_closer) * t_hit_box;
+		hit_index = int(!is_closer) * hit_index + int(is_closer) * i;
+	}
 
 	vec3 color = vec3(0.0);
 
-	if (t_hit > 0)
+	if (hit_index > -1)
 	{
+		AABB hit_aabb = input_aabbs[hit_index];
+		vec3 center = get_aabb_center(hit_aabb).xyz;
+		vec3 extents = get_aabb_extents(hit_aabb).xyz;
+
+		vec3 hit_absolute = ray_origin + ray_direction * t_hit;
+		vec3 hit_relative = hit_absolute - center;
+		vec3 hit_normalized = hit_relative / extents;
+
+		int face_index = get_face_index(hit_normalized);
+		vec3 face_normal = aabb_normals[face_index];
+		vec3 to_light = normalize(light_position - hit_absolute);
+
 		color += clamp(dot(face_normal, to_light) * light_color, 0.0, 1.0);
 	}
 
