@@ -1,6 +1,10 @@
 #version 430
+#define X_SIZE 16
+#define Y_SIZE 8
 
-layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+#define LOCAL_SIZE (X_SIZE * Y_SIZE * Z_SIZE)
+
+layout(local_size_x = X_SIZE, local_size_y = Y_SIZE, local_size_z = Z_SIZE) in;
 
 struct AABB
 {
@@ -125,7 +129,7 @@ vec4 get_aabb_extents(AABB aabb)
 // Simple update
 void main() {
 	// get index in global work group i.e x,y position
-	uint work_group_size = gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z;
+	uint work_group_size = LOCAL_SIZE;
 	vec2 pixel_coords = vec2(gl_WorkGroupID.xy) + vec2(gl_LocalInvocationID.xy) / vec2(gl_WorkGroupSize.xy);
 
 	vec3 camera_forward = normalize(vec3(-1.0, -1.0, -1.0));

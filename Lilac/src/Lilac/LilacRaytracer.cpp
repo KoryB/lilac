@@ -24,7 +24,6 @@ const std::string vertexShaderSource =
 	"  v_tex_coord = vp.xy;\n"
 	"}\n";
 
-// TODO: Change to version 430?
 
 using namespace Lilac;
 
@@ -80,6 +79,7 @@ bool initOpenGl()
 // Next step: moving camera!
 // Then, more boxes!
 
+// Look at using: https://github.com/Shot511/strutil
 int main()
 {
 	sf3d::Window window(sf3d::VideoMode(512, 512), "OpenGL");
@@ -108,7 +108,7 @@ int main()
 	glBindImageTexture(0, outputTexture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
 	auto raytraceShaderSource = loadFileString("resources/shaders/raytrace.cs.glsl");
-	ComputeShader raytraceShader{ raytraceShaderSource };
+	ComputeShader raytraceShader{ raytraceShaderSource, { {"Z_SIZE", "1"}} };
 	ComputeProgram raytraceProgram{ raytraceShader };
 
 	float quad_points[] = {
@@ -135,9 +135,9 @@ int main()
 
 	// TODO: This is way too many boxes for performance to handle on the compute shader side, need octtree stuff asap
 	// TODO: calculate max boxes in 128MB, can easily use packing to store parent index information
-	for (int x = 0; x < 100; x++)
+	for (int x = 0; x < 5; x++)
 	{
-		for (int z = 0; z < 100; z++)
+		for (int z = 0; z < 5; z++)
 		{
 			glm::vec4 min(x * 0.35, 0.5, z * 0.35, 0.0);
 			glm::vec4 max = min + glm::vec4(0.25);
