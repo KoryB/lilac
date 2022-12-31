@@ -1,10 +1,6 @@
 #version 430
-#define X_SIZE 16
-#define Y_SIZE 8
 
-#define LOCAL_SIZE (X_SIZE * Y_SIZE * Z_SIZE)
-
-layout(local_size_x = X_SIZE, local_size_y = Y_SIZE, local_size_z = Z_SIZE) in;
+layout(local_size_x = WORKGROUP_SIZE_X, local_size_y = WORKGROUP_SIZE_Y, local_size_z = WORKGROUP_SIZE_Z) in;
 
 struct AABB
 {
@@ -19,7 +15,7 @@ layout(std430, binding = 0) buffer Pixels
 
 layout(std430, binding = 1) buffer InputAABBs
 {
-	AABB input_aabbs[]; // TODO: Simple pre-processor, probably something online
+	AABB input_aabbs[];
 };
 
 
@@ -129,7 +125,7 @@ vec4 get_aabb_extents(AABB aabb)
 // Simple update
 void main() {
 	// get index in global work group i.e x,y position
-	uint work_group_size = LOCAL_SIZE;
+	uint work_group_size = gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z;
 	vec2 pixel_coords = vec2(gl_WorkGroupID.xy) + vec2(gl_LocalInvocationID.xy) / vec2(gl_WorkGroupSize.xy);
 
 	vec3 camera_forward = normalize(vec3(-1.0, -1.0, -1.0));
@@ -146,7 +142,7 @@ void main() {
 	float t_hit = 1000000; // TODO: Make max value for raytracer
 	int hit_index = -1;
 
-	for (int i = 0; i < 100*100; i++)
+	for (int i = 0; i < INPUT_AABB_SIZE_X * INPUT_AABB_SIZE_Y; i++)
 	{
 		AABB box = input_aabbs[i];
 

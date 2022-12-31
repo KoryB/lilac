@@ -40,7 +40,7 @@ void Lilac::Shader::compileShader(const std::string& source, const std::map<std:
 		glGetShaderInfoLog(m_handle, maxLength, &maxLength, &errorLog[0]);
 
 		std::string errorString(errorLog.begin(), errorLog.end());
-		std::cerr << "Shader compilation error: " << std::endl << errorString << std::endl;
+		std::cerr << "!!!!!!!!!! Shader compilation error: " << std::endl << errorString << std::endl;
 
 		// Exit with failure.
 		glDeleteShader(m_handle); // Don't leak the shader.
@@ -89,14 +89,16 @@ std::string Lilac::Shader::preprocessShader(const std::string& source, int maxDe
 
 	for (int depth = 0; depth < maxDepth; depth++)
 	{
+		bool isReplaced = false;
+
 		for (auto const& [name, value] : sourceMacros)
 		{
-			bool isReplaced = strutil::replace_all(sourceWithoutDefines, name, value);
+			isReplaced |= strutil::replace_all(sourceWithoutDefines, name, value);
+		}
 
-			if (!isReplaced)
-			{
-				break;
-			}
+		if (!isReplaced)
+		{
+			break;
 		}
 	}
 

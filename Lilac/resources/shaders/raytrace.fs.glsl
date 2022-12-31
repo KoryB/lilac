@@ -3,8 +3,8 @@ layout(std430, binding = 0) buffer Pixels
 {
 	vec4 colors[]; // Should match compute shader
 };
-const ivec2 image_size = ivec2(512, 512);
-const ivec3 work_group_size = ivec3(16, 16, 1);
+const ivec2 image_size = ivec2(IMAGE_SIZE_X, IMAGE_SIZE_Y);
+const ivec3 work_group_size = ivec3(WORKGROUP_SIZE_X, WORKGROUP_SIZE_Y, WORKGROUP_SIZE_Z);
 const uint work_group_total_size = work_group_size.x * work_group_size.y * work_group_size.z;
 
 in vec2 v_tex_coord;
@@ -13,7 +13,7 @@ out vec4 frag_color;
 void main() 
 {
 	// vec2 frag_coord = floor(gl_FragCoord.xy * image_size / vec2(512, 512));
-	vec2 frag_coord = floor((image_size - ivec2(1)) * v_tex_coord); // Subtract 1 because we go from 0..1 inclusive
+	vec2 frag_coord = floor(image_size * v_tex_coord - 0.001f); // Subtract 0.001f because we go from 0..1 inclusive
 	ivec2 frag_coord_ivec = ivec2(frag_coord);
 	
 	uint index = uint(work_group_total_size * (frag_coord_ivec.x + frag_coord_ivec.y * image_size.x));

@@ -7,7 +7,11 @@
 #include <Lilac/Program.h>
 #include <Lilac/File.h>
 
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
+
+#include <strutil/strutil.h>
 
 #include <iostream>
 #include <fstream>
@@ -23,6 +27,13 @@ const std::string vertexShaderSource =
 	"  gl_Position = vec4(2.0 * vp - vec3(1.0, 1.0, 0.0), 1.0);\n"
 	"  v_tex_coord = vp.xy;\n"
 	"}\n";
+
+const float quadVertices[] = {
+   1.0f,  0.0f,  0.0f,
+   0.0f,  0.0f,  0.0f,
+   1.0f,  1.0f,  0.0f,
+   0.0f,  1.0f,  0.0f
+};
 
 
 using namespace Lilac;
@@ -78,11 +89,14 @@ bool initOpenGl()
 
 // Next step: moving camera!
 // Then, more boxes!
-
-// Look at using: https://github.com/Shot511/strutil
 int main()
 {
-	sf3d::Window window(sf3d::VideoMode(512, 512), "OpenGL");
+	int windowWidth = 512, windowHeight = 512;
+	int raytracerWidth = 512, raytracerHeight = 512;
+	glm::ivec3 workGroupSize(1, 1, 1); // z should always be 1, unless the compute shader is changed
+	
+
+	sf3d::Window window(sf3d::VideoMode(windowWidth, windowHeight), "OpenGL");
 	window.setActive(true);
 
 	if (!initOpenGl())
@@ -90,10 +104,7 @@ int main()
 		return EXIT_FAILURE;
 	}
 
-	// This assumes compute shaders are available (gl 4.3+)
-	int tex_w = 512, tex_h = 512;
 	GLuint outputTexture = 0;
-
 	glGenTextures(1, &outputTexture);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, outputTexture);
@@ -103,25 +114,26 @@ int main()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, tex_w, tex_h, 0, GL_RGBA, GL_FLOAT, NULL);
+	glm::ivec2 inputAabbSize(5, 5);
 
-	glBindImageTexture(0, outputTexture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-
-	auto raytraceShaderSource = loadFileString("resources/shaders/raytrace.cs.glsl");
-	ComputeShader raytraceShader{ raytraceShaderSource, { {"Z_SIZE", "1"}} };
-	ComputeProgram raytraceProgram{ raytraceShader };
-
-	float quad_points[] = {
-	   1.0f,  0.0f,  0.0f,
-	   0.0f,  0.0f,  0.0f,
-	   1.0f,  1.0f,  0.0f,
-	   0.0f,  1.0f,  0.0f
+	std::map<std::string, std::string> shaderMacros = {
+		{"WORKGROUP_SIZE_X", std::to_string(workGroupSize.x)},
+		{"WORKGROUP_SIZE_Y", std::to_string(workGroupSize.y)},
+		{"WORKGROUP_SIZE_Z", std::to_string(workGroupSize.z)},
+		{"INPUT_AABB_SIZE_X", std::to_string(inputAabbSize.x)},
+		{"INPUT_AABB_SIZE_Y", std::to_string(inputAabbSize.y)},
+		{"IMAGE_SIZE_X", std::to_string(raytracerWidth)},
+		{"IMAGE_SIZE_Y", std::to_string(raytracerHeight)}
 	};
 
+	auto raytraceShaderSource = loadFileString("resources/shaders/raytrace.cs.glsl");
+	ComputeShader raytraceShader{ raytraceShaderSource, shaderMacros };
+	ComputeProgram raytraceProgram{ raytraceShader };
+
 	GLuint buffer = 0;
-	const int raysPerPixel = 16 * 16;
+	const int raysPerPixel = workGroupSize.x * workGroupSize.y * workGroupSize.z;
 	const int channelsPerPixel = 4;
-	const int imageSize = tex_w * tex_h;
+	const int imageSize = raytracerWidth * raytracerHeight;
 	const int bytesPerFloat = 4;
 	const int bufferSize = bytesPerFloat * raysPerPixel * channelsPerPixel * imageSize;
 
@@ -135,9 +147,9 @@ int main()
 
 	// TODO: This is way too many boxes for performance to handle on the compute shader side, need octtree stuff asap
 	// TODO: calculate max boxes in 128MB, can easily use packing to store parent index information
-	for (int x = 0; x < 5; x++)
+	for (int x = 0; x < inputAabbSize.x; x++)
 	{
-		for (int z = 0; z < 5; z++)
+		for (int z = 0; z < inputAabbSize.y; z++)
 		{
 			glm::vec4 min(x * 0.35, 0.5, z * 0.35, 0.0);
 			glm::vec4 max = min + glm::vec4(0.25);
@@ -147,6 +159,9 @@ int main()
 		}
 	}
 
+	/*aabbVectors.emplace_back(-1.0f, -1.0f, -1.0f, 0.0f);
+	aabbVectors.emplace_back(1.0f, 1.0f, 1.0f, 0.0f);*/
+
 	glGenBuffers(1, &aabbBuffer);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, aabbBuffer);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * 4 * aabbVectors.size(), aabbVectors.data(), GL_DYNAMIC_COPY); // TODO: Lookup proper usage
@@ -155,7 +170,7 @@ int main()
 	GLuint quad_vbo = 0;
 	glGenBuffers(1, &quad_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
-	glBufferData(GL_ARRAY_BUFFER, 12 * sizeof(float), quad_points, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, 12 * sizeof(float), quadVertices, GL_STATIC_DRAW);
 
 	GLuint quad_vao = 0;
 	glGenVertexArrays(1, &quad_vao);
@@ -166,19 +181,19 @@ int main()
 
 	auto fragmentShaderSource = loadFileString("resources/shaders/raytrace.fs.glsl");
 
-	VertexShader vertexShader{ vertexShaderSource };
-	FragmentShader fragmentShader{ fragmentShaderSource };
+	VertexShader vertexShader{ vertexShaderSource, shaderMacros };
+	FragmentShader fragmentShader{ fragmentShaderSource, shaderMacros };
 	RenderProgram quadProgram{ vertexShader, fragmentShader };
 
 	auto sleepTime = sf3d::milliseconds(1000);
-
+	
 	auto running = true;
 	while (running)
 	{
 		raytraceProgram.use();
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, buffer);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, aabbBuffer);
-		raytraceProgram.dispatch(tex_w, tex_h);
+		raytraceProgram.dispatch(raytracerWidth, raytracerHeight);
 
 		// make sure writing to image has finished before read
 		// TODO: Add this into the compute program with a configurable bitset
@@ -216,14 +231,14 @@ int main()
 		std::ofstream bufferFile;
 		bufferFile.open("buffer.csv");
 
-		for (int y = 0; y < tex_h; y++)
+		for (int y = 0; y < raytracerHeight; y++)
 		{
-			for (int x = 0; x < tex_w; x++)
+			for (int x = 0; x < raytracerWidth; x++)
 			{
 				bufferFile << "<";
-				for (int i = 0; i < 4; i++)
+				for (int i = 0; i < channelsPerPixel; i++)
 				{
-					auto f = bufferVector[y * tex_w * 4 + x * 4 + i];
+					auto f = bufferVector[y * raytracerWidth * 4 + x * 4 + i]; 
 
 					bufferFile << f;
 
