@@ -6,6 +6,7 @@
 #include <Lilac/Shader.h>
 #include <Lilac/Program.h>
 #include <Lilac/File.h>
+#include <Lilac/SparseVoxelOctree.h>
 
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -184,6 +185,46 @@ int main()
 	VertexShader vertexShader{ vertexShaderSource, shaderMacros };
 	FragmentShader fragmentShader{ fragmentShaderSource, shaderMacros };
 	RenderProgram quadProgram{ vertexShader, fragmentShader };
+
+
+	std::vector<SparseVoxelOctree::Voxel> voxels;
+
+	// This is working for the case of a full voxel 4x4x4 grid of the same material!
+	// Probably because it is always colapsing, below does not work... :(
+	for (int z = 0; z < 4; z++)
+	{
+		for (int y = 0; y < 4; y++)
+		{
+			for (int x = 0; x < 4; x++)
+			{
+				SparseVoxelOctree::Voxel voxel;
+				voxel.x = x;
+				voxel.y = y;
+				voxel.z = z;
+				voxel.materialId = x + y + z;
+
+				voxels.push_back(voxel);
+			}
+		}
+	}
+
+	SparseVoxelOctree svo{ {0.0, 0.0, 0.0}, voxels };
+
+	std::cout << "SVO Contents:" << std::endl;
+
+	svo.walk([](std::vector<size_t> indices, glm::vec3 min, uint16_t scale, uint16_t materialId) {
+		std::cout << "<";
+
+		for (auto index : indices)
+		{
+			std::cout << index << ", ";
+		}
+
+		std::cout << "> " << "<" << min.x << ", " << min.y << ", " << min.z << ">" 
+			<< ", " << scale << ", " << materialId << std::endl;
+	});
+
+	return 0;
 
 	auto sleepTime = sf3d::milliseconds(1000);
 	

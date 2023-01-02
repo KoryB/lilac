@@ -8,6 +8,7 @@ project ("Lilac" VERSION 0.0.1)
 include(FetchContent)
 
 set(BUILD_SHARED_LIBS TRUE) 
+set(CMAKE_BUILD_TYPE Debug)
 
 FetchContent_Declare(
 	SFML3D
@@ -33,7 +34,7 @@ include_directories("${glm_SOURCE_DIR}/")
 # Wouldn't be a bad idea to setup different for Win32 vs x64
 link_directories("lib/GLEW/lib/Release/x64")
 
-add_executable (LilacRaytracer "src/Lilac/LilacRaytracer.cpp" "src/Lilac/Shader.cpp" "src/Lilac/Program.cpp" "src/Lilac/File.cpp" "include/strutil/strutil.h")
+add_executable (LilacRaytracer "src/Lilac/LilacRaytracer.cpp" "src/Lilac/Shader.cpp" "src/Lilac/Program.cpp" "src/Lilac/File.cpp" "include/strutil/strutil.h" "include/Lilac/SparseVoxelOctree.h" "src/Lilac/SparseVoxelOctree.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET LilacRaytracer PROPERTY CXX_STANDARD 20)
