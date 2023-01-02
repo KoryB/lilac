@@ -220,6 +220,11 @@ bool Lilac::SparseVoxelOctree::Node::isChildrenHomogenous()
 		return false;
 	}
 
+	if (!children[0]->isLeaf())
+	{
+		return false;
+	}
+
 	auto materialId = children[0]->materialId;
 
 	for (auto child : children)

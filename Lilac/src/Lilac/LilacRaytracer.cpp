@@ -190,7 +190,7 @@ int main()
 	std::vector<SparseVoxelOctree::Voxel> voxels;
 
 	// This is working for the case of a full voxel 4x4x4 grid of the same material!
-	// Probably because it is always colapsing, below does not work... :(
+	// Need to do some testing of different patterns
 	for (int z = 0; z < 4; z++)
 	{
 		for (int y = 0; y < 4; y++)
