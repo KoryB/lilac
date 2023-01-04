@@ -191,6 +191,8 @@ int main()
 
 	// This is working for the case of a full voxel 4x4x4 grid of the same material!
 	// Need to do some testing of different patterns
+	int octent;
+
 	for (int z = 0; z < 4; z++)
 	{
 		for (int y = 0; y < 4; y++)
@@ -201,7 +203,7 @@ int main()
 				voxel.x = x;
 				voxel.y = y;
 				voxel.z = z;
-				voxel.materialId = x + y + z;
+				voxel.materialId = 0;
 
 				voxels.push_back(voxel);
 			}

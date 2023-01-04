@@ -105,8 +105,6 @@ void Lilac::SparseVoxelOctree::collapseNode(Node* parent, size_t childIndex, Nod
 		return;
 	}
 
-	std::cout << "Collapsing Node: " << "<" << node->min.x << ", " << node->min.y << ", " << node->min.z << ">" << "Scale: " << node->scale << std::endl;
-
 	for (int i = 0; i < 8; i++)
 	{
 		collapseNode(node, i, node->children[i]);
@@ -123,6 +121,10 @@ void Lilac::SparseVoxelOctree::collapseNode(Node* parent, size_t childIndex, Nod
 
 	if (node->isChildrenHomogenous())
 	{
+		std::cout << "Collapsing Node: " << "<" << node->min.x << ", " << node->min.y << ", " << node->min.z << ">" << 
+			"Scale: " << node->scale << " " <<
+			"MaterialId: " << node->materialId << std::endl;
+
 		auto min = node->min;
 		auto scale = node->scale;
 		auto materialId = node->children[0]->materialId;
@@ -220,9 +222,12 @@ bool Lilac::SparseVoxelOctree::Node::isChildrenHomogenous()
 		return false;
 	}
 
-	if (!children[0]->isLeaf())
+	for (int i = 0; i < 8; i++)
 	{
-		return false;
+		if (!children[i]->isLeaf())
+		{
+			return false;
+		}
 	}
 
 	auto materialId = children[0]->materialId;
