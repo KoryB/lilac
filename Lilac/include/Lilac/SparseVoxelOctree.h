@@ -22,7 +22,12 @@ public:
 	SparseVoxelOctree(glm::vec3 min, const std::vector<Voxel>& voxels);
 
 	// Vector of indices, min, scale, materialId
+	// Do we want this walk to hit non-leaf nodes as well
 	void walk(std::function<void(std::vector<size_t>, glm::vec3, uint16_t, uint16_t)> func);
+
+	// Buffer format is
+	// 
+	void* flatten() const; // TODO: Figure out if we need to do endianness stuff here, maybe use unique pointer here?
 
 private:
 	struct Node
@@ -42,14 +47,14 @@ private:
 
 	void walk_internal(std::function<void(std::vector<size_t>, glm::vec3, uint16_t, uint16_t)> func, Node* node, std::vector<size_t> indices);
 
-
 	void addVoxels(const std::vector<Voxel>& voxels);
 	void addVoxel(Node* parent, size_t leafIndex, Node* node, Voxel voxel);
-
-	void collapseNodes();
-	void collapseNode(Node* parent, size_t leafIndex, Node* node);
-
 	void splitLeaf(Node* parent, size_t leafIndex, Node* leaf);
+
+	bool tryCollapseNodes();
+	bool tryCollapseNode(Node* parent, size_t childIndex, Node* node);
+	void collapseNode(Node* parent, size_t childIndex, Node* node);
+
 	glm::vec3 octentIndexToOffset(size_t i);
 	size_t globalPositionToChildIndex(Node* node, uint16_t x, uint16_t y, uint16_t z);
 

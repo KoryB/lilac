@@ -200,10 +200,10 @@ int main()
 			for (int x = 0; x < 4; x++)
 			{
 				SparseVoxelOctree::Voxel voxel;
-				voxel.x = x;
-				voxel.y = y;
-				voxel.z = z;
-				voxel.materialId = 0;
+				voxel.x = x+4;
+				voxel.y = y+4;
+				voxel.z = z+4;
+				voxel.materialId = 1;
 
 				voxels.push_back(voxel);
 			}

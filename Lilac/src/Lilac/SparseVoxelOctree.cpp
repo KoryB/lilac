@@ -36,6 +36,12 @@ void Lilac::SparseVoxelOctree::walk(std::function<void(std::vector<size_t>, glm:
 	walk_internal(func, m_head, { });
 }
 
+std::vector<byte> Lilac::SparseVoxelOctree::flatten() const
+{
+	return {};
+}
+
+
 void Lilac::SparseVoxelOctree::walk_internal(std::function<void(std::vector<size_t>, glm::vec3, uint16_t, uint16_t)> func, Node* node, std::vector<size_t> indices)
 {
 	if (node->isLeaf())
@@ -60,7 +66,7 @@ void Lilac::SparseVoxelOctree::addVoxels(const std::vector<Voxel>& voxels)
 		addVoxel(nullptr, 0, m_head, voxel);
 	}
 
-	collapseNodes();
+	tryCollapseNodes();
 }
 
 //TODO: This assumes the voxel is inside the node
@@ -93,21 +99,21 @@ void Lilac::SparseVoxelOctree::addVoxel(Node* parent, size_t leafIndex, Node* no
 	addVoxel(node, childIndex, node->children[childIndex], voxel);
 }
 
-void Lilac::SparseVoxelOctree::collapseNodes()
+bool Lilac::SparseVoxelOctree::tryCollapseNodes()
 {
-	collapseNode(nullptr, 0, m_head);
+	return tryCollapseNode(nullptr, 0, m_head);
 }
 
-void Lilac::SparseVoxelOctree::collapseNode(Node* parent, size_t childIndex, Node* node)
+bool Lilac::SparseVoxelOctree::tryCollapseNode(Node* parent, size_t childIndex, Node* node)
 {
 	if (node->isLeaf())
 	{
-		return;
+		return false;
 	}
 
 	for (int i = 0; i < 8; i++)
 	{
-		collapseNode(node, i, node->children[i]);
+		tryCollapseNode(node, i, node->children[i]);
 
 		if (parent == nullptr)
 		{
@@ -121,23 +127,33 @@ void Lilac::SparseVoxelOctree::collapseNode(Node* parent, size_t childIndex, Nod
 
 	if (node->isChildrenHomogenous())
 	{
-		std::cout << "Collapsing Node: " << "<" << node->min.x << ", " << node->min.y << ", " << node->min.z << ">" << 
-			"Scale: " << node->scale << " " <<
-			"MaterialId: " << node->materialId << std::endl;
+		collapseNode(parent, childIndex, node);
 
-		auto min = node->min;
-		auto scale = node->scale;
-		auto materialId = node->children[0]->materialId;
-		delete node;
+		return true;
+	}
 
-		if (node == m_head)
-		{
-			m_head = new Node(min, scale, materialId);
-		}
-		else
-		{
-			parent->children[childIndex] = new Node(min, scale, materialId);
-		}
+	return false;
+}
+
+void Lilac::SparseVoxelOctree::collapseNode(Node* parent, size_t childIndex, Node* node)
+{
+	std::cout << "Collapsing Node: " << "<" << node->min.x << ", " << node->min.y << ", " << node->min.z << ">" <<
+		"Scale: " << node->scale << " " <<
+		"MaterialId: " << node->materialId << std::endl;
+
+	auto min = node->min;
+	auto scale = node->scale;
+	auto materialId = node->children[0]->materialId;
+
+	delete node;
+
+	if (node == m_head)
+	{
+		m_head = new Node(min, scale, materialId);
+	}
+	else
+	{
+		parent->children[childIndex] = new Node(min, scale, materialId);
 	}
 }
 
