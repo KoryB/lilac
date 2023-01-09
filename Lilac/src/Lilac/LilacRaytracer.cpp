@@ -15,6 +15,7 @@
 #include <strutil/strutil.h>
 
 #include <iostream>
+#include <cstddef>
 #include <fstream>
 #include <sstream>
 #include <vector>
@@ -160,9 +161,6 @@ int main()
 		}
 	}
 
-	/*aabbVectors.emplace_back(-1.0f, -1.0f, -1.0f, 0.0f);
-	aabbVectors.emplace_back(1.0f, 1.0f, 1.0f, 0.0f);*/
-
 	glGenBuffers(1, &aabbBuffer);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, aabbBuffer);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, 4 * 4 * aabbVectors.size(), aabbVectors.data(), GL_DYNAMIC_COPY); // TODO: Lookup proper usage
@@ -225,6 +223,15 @@ int main()
 		std::cout << "> " << "<" << min.x << ", " << min.y << ", " << min.z << ">" 
 			<< ", " << scale << ", " << materialId << std::endl;
 	});
+
+	std::vector<std::byte> flattened = svo.flatten();
+
+	std::cout << "SVO Begin Flattened (as int): " << std::endl;
+	for (auto b : flattened)
+	{
+		std::cout << int(b) << " ";
+	}
+	std::cout << std::endl << "SVO End Flattened" << std::endl;
 
 	return 0;
 

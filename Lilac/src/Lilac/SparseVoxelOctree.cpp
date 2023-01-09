@@ -2,15 +2,16 @@
 
 #include <glm/vec3.hpp>
 
+#include <cstddef>
 #include <iostream>
 #include <algorithm>
 #include <vector>
+#include <map>
 #include <functional>
 
 
 Lilac::SparseVoxelOctree::SparseVoxelOctree(glm::vec3 min, const std::vector<Voxel>& voxels)
 	: m_head(nullptr)
-	, m_buffer()
 {
 	uint16_t scale = 1;
 
@@ -23,7 +24,7 @@ Lilac::SparseVoxelOctree::SparseVoxelOctree(glm::vec3 min, const std::vector<Vox
 	uint16_t powerOfTwoScale = 1;
 	while (powerOfTwoScale < scale)
 	{
-		powerOfTwoScale = powerOfTwoScale *= 2;
+		powerOfTwoScale *= 2;
 	}
 
 	m_head = new Node(min, powerOfTwoScale, 0);
@@ -31,18 +32,143 @@ Lilac::SparseVoxelOctree::SparseVoxelOctree(glm::vec3 min, const std::vector<Vox
 	addVoxels(voxels);
 }
 
-void Lilac::SparseVoxelOctree::walk(std::function<void(std::vector<size_t>, glm::vec3, uint16_t, uint16_t)> func)
+void Lilac::SparseVoxelOctree::walk(const std::function<void(std::vector<size_t>, glm::vec3, uint16_t, uint16_t)>& func)
 {
 	walk_internal(func, m_head, { });
 }
 
-std::vector<byte> Lilac::SparseVoxelOctree::flatten() const
+std::vector<std::byte> Lilac::SparseVoxelOctree::flatten() const
 {
-	return {};
+	std::vector<std::byte> flattened;
+	std::map<Node*, size_t> parentToIndex;
+	std::map<Node*, size_t> leafToIndex;
+	std::vector<Node*> parents;
+	std::vector<Node*> leaves;
+
+	gatherNodes(m_head, parentToIndex, leafToIndex, parents, leaves);
+
+	flattenedWriteHeader(flattened, parents, leaves);
+	flattenedWriteParents(flattened, parentToIndex, leafToIndex, parents);
+	flattenedWriteLeaves(flattened, leaves);
+
+	return flattened;
+}
+
+void Lilac::SparseVoxelOctree::flattenedWriteHeader(
+	std::vector<std::byte>& vec, 
+	const std::vector<Node*>& parents, 
+	const std::vector<Node*>& leaves) const
+{
+	pushGLuint(vec, parents.size());  // parent_count
+	pushGLuint(vec, leaves.size());   // leaf_count
+	pushGLuint(vec, m_head->scale);   // scale16u
+	pushGLuint(vec, 0);               // padding
+	pushVec3AsVec4(vec, m_head->min); // min
+}
+
+void Lilac::SparseVoxelOctree::flattenedWriteParents(
+	std::vector<std::byte>& vec, 
+	const std::map<Node*, size_t>& parentToIndex,
+	const std::map<Node*, size_t>& leafToIndex,
+	const std::vector<Node*>& parents)
+{
+	size_t parent_count = parents.size();
+
+	for (const Node* parent : parents)
+	{
+		pushFloat(vec, parent->min.x);
+		pushFloat(vec, parent->min.y);
+		pushFloat(vec, parent->min.z);
+		pushGLuint(vec, parent->scale);
+
+		for (Node* child : parent->children)
+		{
+			size_t index = child->isLeaf()
+				? parent_count + leafToIndex.at(child)
+				: parentToIndex.at(child);
+
+			pushGLuint(vec, index);
+		}
+	}
+}
+
+void Lilac::SparseVoxelOctree::flattenedWriteLeaves(
+	std::vector<std::byte>& vec, 
+	const std::vector<Node*>& leaves)
+{
+
+	for (Node* leaf : leaves)
+	{
+		pushFloat(vec, leaf->min.x);
+		pushFloat(vec, leaf->min.y);
+		pushFloat(vec, leaf->min.z);
+		pushUint16(vec, leaf->materialId);
+		pushUint16(vec, leaf->scale);
+	}
+}
+
+void Lilac::SparseVoxelOctree::gatherNodes(Node* current,
+	std::map<Node*, size_t>& parentToIndex,
+	std::map<Node*, size_t>& leafToIndex,
+	std::vector<Node*>& parents,
+	std::vector<Node*>& leaves) const
+{
+	if (current->isLeaf())
+	{
+		leafToIndex[current] = leaves.size();
+		leaves.push_back(current);
+	}
+	else
+	{
+		parentToIndex[current] = parents.size();
+		parents.push_back(current);
+
+		for (auto child : current->children)
+		{
+			gatherNodes(child, parentToIndex, leafToIndex, parents, leaves);
+		}
+	}
+}
+
+void Lilac::SparseVoxelOctree::pushFloat(std::vector<std::byte>& vec, GLfloat x)
+{
+	auto x_p = reinterpret_cast<std::byte const*>(&x);
+
+	pushBytes(vec, x_p, 4);
+}
+
+void Lilac::SparseVoxelOctree::pushGLuint(std::vector<std::byte>& vec, GLuint x)
+{
+    auto x_p = reinterpret_cast<std::byte const*>(&x);
+
+	pushBytes(vec, x_p, 4);
+}
+
+void Lilac::SparseVoxelOctree::pushUint16(std::vector<std::byte>& vec, uint16_t x)
+{
+    auto x_p = reinterpret_cast<std::byte const*>(&x);
+
+	pushBytes(vec, x_p, 2);
+}
+
+void Lilac::SparseVoxelOctree::pushVec3AsVec4(std::vector<std::byte>& vec, glm::vec3 x)
+{
+	pushFloat(vec, x.x);
+	pushFloat(vec, x.y);
+	pushFloat(vec, x.z);
+	pushFloat(vec, 0.0f);
+}
+
+void Lilac::SparseVoxelOctree::pushBytes(std::vector<std::byte>& vec, std::byte const* x, size_t byte_count)
+{
+	for (int i = 0; i < byte_count; i++)
+	{
+		vec.push_back(*(x + i));
+	}
 }
 
 
-void Lilac::SparseVoxelOctree::walk_internal(std::function<void(std::vector<size_t>, glm::vec3, uint16_t, uint16_t)> func, Node* node, std::vector<size_t> indices)
+void Lilac::SparseVoxelOctree::walk_internal(const std::function<void(std::vector<size_t>, glm::vec3, uint16_t, uint16_t)>& func, Node* node, std::vector<size_t> indices)
 {
 	if (node->isLeaf())
 	{
@@ -147,6 +273,8 @@ void Lilac::SparseVoxelOctree::collapseNode(Node* parent, size_t childIndex, Nod
 
 	delete node;
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "DanglingPointer"
 	if (node == m_head)
 	{
 		m_head = new Node(min, scale, materialId);
@@ -155,21 +283,22 @@ void Lilac::SparseVoxelOctree::collapseNode(Node* parent, size_t childIndex, Nod
 	{
 		parent->children[childIndex] = new Node(min, scale, materialId);
 	}
+#pragma clang diagnostic pop
 }
 
-glm::vec3 Lilac::SparseVoxelOctree::octentIndexToOffset(size_t i)
+glm::vec3 Lilac::SparseVoxelOctree::octantIndexToOffset(size_t i)
 {
-	return glm::vec3(
+	return {
 		i & 0b001,
 		(i & 0b010) >> 1,
 		(i & 0b100) >> 2
-	);
+	};
 }
 
 size_t Lilac::SparseVoxelOctree::globalPositionToChildIndex(Node* node, uint16_t x, uint16_t y, uint16_t z)
 {
 	auto min = node->min;
-	auto halfScale = node->scale / 2;
+	auto halfScale = node->scale / 2.0f;
 
 	return ((float)x - min.x >= halfScale) * 1 +
 		((float)y - min.y >= halfScale) * 2 +
@@ -181,26 +310,26 @@ void Lilac::SparseVoxelOctree::splitLeaf(Node* parent, size_t leafIndex, Node* l
 	auto min = leaf->min;
 	auto halfScale = leaf->scale / 2;
 	auto materialId = leaf->materialId;
-	Node* octent;
+	Node* octant;
 
 	if (parent != nullptr)
 	{
-		octent = new Node(min, leaf->scale, materialId);
+        octant = new Node(min, leaf->scale, materialId);
 	}
 	else
 	{
-		octent = m_head;
+        octant = m_head;
 	}
 
 	for (int i = 0; i < 8; i++)
 	{
-		octent->children[i] = new Node(min + (float)halfScale * octentIndexToOffset(i), halfScale, materialId);
+        octant->children[i] = new Node(min + (float)halfScale * octantIndexToOffset(i), halfScale, materialId);
 	}
 
 	if (parent != nullptr)
 	{
 		delete leaf;
-		parent->children[leafIndex] = octent;
+		parent->children[leafIndex] = octant;
 	}
 }
 
@@ -210,51 +339,42 @@ Lilac::SparseVoxelOctree::Node::Node(glm::vec3 min, uint16_t scale, uint16_t mat
 	: min(min)
 	, scale(scale)
 	, materialId(materialId)
+    , children {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}
 {
-	for (int i = 0; i < 8; i++)
-	{
-		children[i] = nullptr;
-	}
 }
 
 Lilac::SparseVoxelOctree::Node::~Node()
 {
-	for (int i = 0; i < 8; i++)
+	for (auto & i : children)
 	{
-		delete children[i];
-		children[i] = nullptr;
+		delete i;
+		i = nullptr;
 	}
 }
 
-bool Lilac::SparseVoxelOctree::Node::isLeaf()
+bool Lilac::SparseVoxelOctree::Node::isLeaf() const
 {
 	return children[0] == nullptr;
 }
 
-bool Lilac::SparseVoxelOctree::Node::isChildrenHomogenous()
+bool Lilac::SparseVoxelOctree::Node::isChildrenHomogenous() const
 {
 	if (isLeaf())
 	{
 		return false;
 	}
 
-	for (int i = 0; i < 8; i++)
+	for (auto i : children)
 	{
-		if (!children[i]->isLeaf())
+		if (!i->isLeaf())
 		{
 			return false;
 		}
 	}
 
 	auto materialId = children[0]->materialId;
-
-	for (auto child : children)
-	{
-		if (child->materialId != materialId)
-		{
-			return false;
-		}
-	}
-
-	return true;
+    return std::ranges::all_of(
+        children,
+        [materialId](const Node* child) { return child->materialId == materialId; }
+    );
 }

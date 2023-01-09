@@ -34,13 +34,13 @@ include_directories("${glm_SOURCE_DIR}/")
 # Wouldn't be a bad idea to setup different for Win32 vs x64
 link_directories("lib/GLEW/lib/Release/x64")
 
-add_executable (LilacRaytracer "src/Lilac/LilacRaytracer.cpp" "src/Lilac/Shader.cpp" "src/Lilac/Program.cpp" "src/Lilac/File.cpp" "include/strutil/strutil.h" "include/Lilac/SparseVoxelOctree.h" "src/Lilac/SparseVoxelOctree.cpp")
+add_executable(LilacRaytracer "src/Lilac/LilacRaytracer.cpp" "src/Lilac/Shader.cpp" "src/Lilac/Program.cpp" "src/Lilac/File.cpp" "include/strutil/strutil.h" "include/Lilac/SparseVoxelOctree.h" "src/Lilac/SparseVoxelOctree.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET LilacRaytracer PROPERTY CXX_STANDARD 20)
 endif()
 
-target_link_libraries(LilacRaytracer sfml3d-graphics sfml3d-window sfml3d-system glew32) # Header only boost
+target_link_libraries(LilacRaytracer sfml3d-graphics sfml3d-window sfml3d-system glew32)
 
 # TODO: Add tests and install targets if needed.
 
