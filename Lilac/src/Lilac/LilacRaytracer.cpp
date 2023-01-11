@@ -225,13 +225,38 @@ int main()
 	});
 
 	std::vector<std::byte> flattened = svo.flatten();
+    auto parent_count = ((GLuint*)flattened.data())[0];
+    auto leaf_count = ((GLuint*)flattened.data())[1];
 
 	std::cout << "SVO Begin Flattened (as int): " << std::endl;
-	for (auto b : flattened)
+    std::cout << "Header" << std::endl;
+	for (int i = 0; i < 8*4; i++)
 	{
-		std::cout << int(b) << " ";
+		std::cout << int(flattened[i]) << " ";
 	}
-	std::cout << std::endl << "SVO End Flattened" << std::endl;
+
+    std::cout << std::endl << "Parents" << std::endl;
+    for (int p = 0; p < parent_count; p++)
+    {
+        for (int i = 0; i < 12*4; i++)
+        {
+            std::cout << int(flattened[32 + p*8*4 + i]) << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout << "Leaves" << std::endl;
+    for (int p = 0; p < leaf_count; p++)
+    {
+        for (int i = 0; i < 4*4; i++)
+        {
+            std::cout << int(flattened[32 + parent_count*12*4 + p*4*4 + i]) << " ";
+        }
+        std::cout << std::endl;
+    }
+	std::cout << "SVO End Flattened" << std::endl;
+
+    std::cout << flattened.size() << " vs " << 32 + parent_count*12*4 + leaf_count*4*4 << std::endl;
 
 	return 0;
 

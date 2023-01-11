@@ -77,8 +77,8 @@ private:
 
 	static void flattenedWriteParents(
 		std::vector<std::byte>& vec,
-		const std::map<Node*, size_t>& parent_to_index,
-		const std::map<Node*, size_t>& leaf_to_index,
+		const std::map<Node*, size_t>& parentToIndex,
+		const std::map<Node*, size_t>& leafToIndex,
 		const std::vector<Node*>& parents);
 
 	static void flattenedWriteLeaves(
